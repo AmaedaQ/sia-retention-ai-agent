@@ -1,0 +1,20 @@
+# Python environment and cache files
+__pycache__/
+*.pyc
+.venv/
+env/
+venv/
+
+# Secrets and Configuration (Crucial: Protects your API keys)
+.env
+
+# Local Data (Prevents local CSV/JSON logs from being pushed to GitHub)
+backend/data/*.csv
+backend/data/*.json
+
+# Streamlit-specific configuration
+.streamlit/
+
+# OS-specific temporary files
+.DS_Store
+Thumbs.db
