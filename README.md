@@ -1,4 +1,3 @@
-```markdown
 # 📡 SIA: Strategic Intelligence Agent (Enterprise Retention Engine)
 
 **SIA** is an autonomous, multi-agent AI framework designed for the telecommunications industry to proactively combat customer churn. Utilizing **LangGraph** for stateful orchestration and **Groq (Llama-3.3-70B)** for low-latency reasoning, SIA transforms raw subscriber data into actionable retention protocols.
@@ -72,6 +71,3 @@ streamlit run frontend/app.py
 * **Data-Driven Retention**: Moves beyond generic marketing to personalized customer lifecycle management.
 
 ---
-
-
-```
