@@ -106,12 +106,21 @@ streamlit run frontend/app.py
 
 The churn-risk score currently comes from a hand-written formula over
 synthetic data — honest, but not a trained model. Phase 0 (data/model
-contracts, config, tests) is done; Phases 1-4 (real dataset, a trained
-XGBoost/LightGBM model with SHAP explainability, integration behind a
-`USE_ML_MODEL` feature flag, and a redeployed dashboard with real metrics)
-are in progress, entirely on free-tier compute (Google Colab + Hugging
-Face Hub). See `backend/schemas.py` and `config/settings.py` for the
-contracts this is built around.
+contracts, config, tests) and Phase 1 (real dataset pipeline) are done;
+Phases 2-4 (a trained XGBoost/LightGBM model with SHAP explainability,
+integration behind a `USE_ML_MODEL` feature flag, and a redeployed
+dashboard with real metrics) are in progress, entirely on free-tier
+compute (Google Colab + Hugging Face Hub). See `backend/schemas.py` and
+`config/settings.py` for the contracts this is built around.
+
+**Phase 1 status:** `notebooks/01_data_pipeline.py` loads the real
+[IBM/Kaggle Telco Customer Churn dataset](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
+(~7,043 customers, 26.58% churn rate), cleans it, adds four clearly
+documented synthetic bridge columns for fields this dataset doesn't have,
+validates every row against the `Subscriber` schema, and writes a
+stratified train/val/test split to `data/processed/` — see
+`data/processed/DATASET_CARD.md` for exactly what's real vs. synthetic,
+and `notebooks/README.md` for how to push the result to Hugging Face.
 
 ---
 
