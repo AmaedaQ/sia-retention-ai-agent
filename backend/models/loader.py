@@ -13,7 +13,6 @@ never has to know which path served a prediction.
 
 import os
 import sys
-from typing import Optional
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from config.settings import settings
@@ -48,9 +47,10 @@ def load_churn_model() -> LoadedModel:
         raise ModelUnavailable("HF_MODEL_REPO is not configured.")
 
     try:
-        from huggingface_hub import hf_hub_download
-        import joblib
         import json
+
+        import joblib
+        from huggingface_hub import hf_hub_download
     except ImportError as e:
         raise ModelUnavailable(f"missing dependency for model loading: {e}") from e
 
@@ -80,7 +80,7 @@ def load_churn_model() -> LoadedModel:
     return LoadedModel(model=model, feature_columns=feature_columns, revision=settings.hf_model_revision)
 
 
-_cached_model: Optional[LoadedModel] = None
+_cached_model: LoadedModel | None = None
 _load_attempted = False
 
 

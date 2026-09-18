@@ -1,6 +1,8 @@
 import datetime
 import os
+
 import pandas as pd
+
 
 def execute_retention_action(report):
     """Log the approved retention offer into a CSV for tracking."""

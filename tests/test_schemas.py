@@ -1,15 +1,15 @@
 """Phase 0 tests: the data contracts reject bad data the way the pipeline
 will depend on later. Run with: pytest tests/"""
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 from pydantic import ValidationError
 
-from backend.schemas import Subscriber, RiskPrediction, RetentionReport, SHAPFactor
+from backend.schemas import RetentionReport, RiskPrediction, SHAPFactor, Subscriber
 
 
 def test_subscriber_valid():

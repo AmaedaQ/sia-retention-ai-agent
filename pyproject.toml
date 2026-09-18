@@ -18,6 +18,10 @@ ignore = [
 # that import-after-code pattern is intentional here, not a mistake.
 "notebooks/*.py" = ["E402"]
 "scripts/*.py" = ["E402"]
+# Streamlit apps set_page_config() before other imports by convention, and
+# frontend/app.py needs the sys.path append before importing the backend
+# package -- same intentional import-after-setup pattern as notebooks/.
+"frontend/*.py" = ["E402"]
 
 [tool.bandit]
 # Skips are scoped and justified, not blanket-disabled:

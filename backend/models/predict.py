@@ -16,13 +16,12 @@ crashing or silently misaligning the feature order.
 
 import os
 import sys
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from backend.models.loader import LoadedModel, ModelUnavailable, get_churn_model
+from backend.models.loader import LoadedModel, get_churn_model
 from backend.schemas import RiskPrediction, SHAPFactor
 from config.settings import settings
 
@@ -36,7 +35,7 @@ NUMERIC_FEATURES = [
 CATEGORICAL_FEATURE = "active_plan"
 
 _cached_explainer = None
-_explainer_for_revision: Optional[str] = None
+_explainer_for_revision: str | None = None
 
 
 def _build_feature_frame(users_df: pd.DataFrame, feature_columns: list) -> pd.DataFrame:

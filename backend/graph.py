@@ -1,16 +1,18 @@
-import sys
 import os
-from typing import TypedDict, List
-from langgraph.graph import StateGraph, START, END
+import sys
+from typing import TypedDict
+
+from langgraph.graph import END, START, StateGraph
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from agents.monitor import monitor_churn_risks
 from agents.decider import get_batch_retention_plans
+from agents.monitor import monitor_churn_risks
+
 
 class AgentState(TypedDict):
     threshold: float 
-    risky_users: List[dict]
-    final_reports: List[dict]
+    risky_users: list[dict]
+    final_reports: list[dict]
 
 def monitor_node(state: AgentState):
     t = state.get("threshold", 0.7)

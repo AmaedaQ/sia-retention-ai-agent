@@ -55,7 +55,6 @@ def test_prepare_features_reindexes_missing_plan_category():
 
     assert list(X_small.columns) == list(X_train.columns)
     # the plan columns the small split doesn't have should be all zero, not missing
-    missing_plan_cols = [c for c in X_train.columns if c.startswith("plan_") and c not in X_small.columns[X_small.any()]]
     assert (X_small[[c for c in X_train.columns if c.startswith("plan_") and c != "plan_Flexi"]] == 0).all().all()
 
 

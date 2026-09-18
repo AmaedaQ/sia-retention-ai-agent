@@ -1,11 +1,12 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import sys
 import os
+import sys
+import time
+
+import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import time
+import streamlit as st
 
 # Path setup for Cloud environment
 current_dir = os.path.dirname(__file__)
@@ -13,8 +14,8 @@ root_dir = os.path.abspath(os.path.join(current_dir, '..'))
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 
-from backend.graph import retention_app
 from backend.agents.action import execute_retention_action
+from backend.graph import retention_app
 from config.settings import settings
 
 # --- PAGE CONFIG ---
@@ -427,8 +428,9 @@ def get_model_evaluation():
     if not settings.hf_model_repo:
         return {"available": False, "reason": "HF_MODEL_REPO is not configured.", "metrics": None, "raw": None}
     try:
-        from huggingface_hub import hf_hub_download
         import json as _json
+
+        from huggingface_hub import hf_hub_download
         metrics_path = hf_hub_download(repo_id=settings.hf_model_repo, filename="metrics.json", revision=settings.hf_model_revision)
         with open(metrics_path) as f:
             metrics = _json.load(f)

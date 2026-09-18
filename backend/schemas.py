@@ -5,7 +5,7 @@ trained model, so a bad row or a bad model output fails fast and loud here
 instead of silently corrupting a downstream agent's state.
 """
 
-from typing import Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -20,7 +20,7 @@ class Subscriber(BaseModel):
     signal_strength_score: float = Field(ge=0, le=1)
     active_plan: str
     support_tickets_open: int = Field(ge=0)
-    churn_risk_score: Optional[float] = Field(default=None, ge=0, le=1)
+    churn_risk_score: float | None = Field(default=None, ge=0, le=1)
 
     @field_validator("user_id")
     @classmethod
@@ -47,7 +47,7 @@ class RiskPrediction(BaseModel):
     user_id: str
     churn_risk_score: float = Field(ge=0, le=1)
     source: str = Field(description='"model" or "formula"')
-    model_revision: Optional[str] = None
+    model_revision: str | None = None
     top_factors: list[SHAPFactor] = Field(default_factory=list)
 
     @field_validator("source")

@@ -12,11 +12,12 @@ import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import dataclasses
+
 from backend.models import loader as loader_module
 from backend.models import predict as predict_module
 from backend.models.loader import LoadedModel, ModelUnavailable
 from config.settings import settings
-import dataclasses
 
 
 def _patch_settings(monkeypatch, module, **overrides):

@@ -1,8 +1,9 @@
-import os
 import json
+import os
+
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_groq import ChatGroq
 
 # Load .env for local development
 env_path = os.path.join(os.path.dirname(__file__), '../../.env')
