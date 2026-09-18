@@ -102,6 +102,19 @@ streamlit run frontend/app.py
 * **Hyper-Personalization**
   Replaces generic campaigns with individualized retention strategies.
 
+## Roadmap: real ML risk scoring (in progress)
+
+The churn-risk score currently comes from a hand-written formula over
+synthetic data — honest, but not a trained model. Phase 0 (data/model
+contracts, config, tests) is done; Phases 1-4 (real dataset, a trained
+XGBoost/LightGBM model with SHAP explainability, integration behind a
+`USE_ML_MODEL` feature flag, and a redeployed dashboard with real metrics)
+are in progress, entirely on free-tier compute (Google Colab + Hugging
+Face Hub). See `backend/schemas.py` and `config/settings.py` for the
+contracts this is built around.
+
+---
+
 ---
 
 ## Contribution & Contact
