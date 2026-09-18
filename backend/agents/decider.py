@@ -1,23 +1,24 @@
 import json
 import os
+import sys
 
-from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
-# Load .env for local development
-env_path = os.path.join(os.path.dirname(__file__), '../../.env')
-if os.path.exists(env_path):
-    load_dotenv(env_path)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from config.settings import settings
+
 
 def get_batch_retention_plans(users_list):
     """Send risky users to AI for personalized retention offers."""
-    api_key = os.getenv("GROQ_API_KEY")
-    
+    # Read from config/settings.py (env-backed), not hardcoded -- a model
+    # rename or deprecation on Groq's side (e.g. llama-3.3-70b-versatile's
+    # Aug 2026 move to enterprise-only) is then a one-line .env change,
+    # not a code change.
     llm = ChatGroq(
-        temperature=0.1, 
-        model_name="llama-3.3-70b-versatile", 
-        groq_api_key=api_key
+        temperature=0.1,
+        model_name=settings.groq_model,
+        groq_api_key=settings.groq_api_key,
     )
 
     system_prompt = """

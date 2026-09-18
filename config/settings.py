@@ -23,7 +23,7 @@ def _get_bool(name: str, default: bool) -> bool:
 class Settings:
     # --- Reasoning layer (unchanged from the original project) ---
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
-    groq_model: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    groq_model: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
     # --- ML risk-scoring layer (added for the model-upgrade phases) ---
     # When False, monitor.py uses the original hand-written formula. This
