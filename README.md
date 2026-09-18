@@ -107,10 +107,11 @@ streamlit run frontend/app.py
 The churn-risk score currently comes from a hand-written formula over
 synthetic data — honest, but not a trained model. Phase 0 (data/model
 contracts, config, tests) and Phase 1 (real dataset pipeline) are done;
-Phases 2-4 (a trained XGBoost/LightGBM model with SHAP explainability,
-integration behind a `USE_ML_MODEL` feature flag, and a redeployed
-dashboard with real metrics) are in progress, entirely on free-tier
-compute (Google Colab + Hugging Face Hub). See `backend/schemas.py` and
+Phase 2 (a trained XGBoost model with SHAP explainability) is written
+and ready to run in Colab (see `notebooks/README.md`); Phases 3-4
+(integration behind the `USE_ML_MODEL` feature flag and a redeployed
+dashboard with real metrics) are still ahead. All of this runs on
+free-tier compute (Google Colab + Hugging Face Hub). See `backend/schemas.py` and
 `config/settings.py` for the contracts this is built around.
 
 **Phase 1 status:** `notebooks/01_data_pipeline.py` loads the real

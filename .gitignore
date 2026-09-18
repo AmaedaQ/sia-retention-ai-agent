@@ -18,3 +18,5 @@ backend/data/*.json
 # OS-specific temporary files
 .DS_Store
 Thumbs.db
+# Phase 2 trained-model outputs (large binaries -- push to Hugging Face instead)
+artifacts/

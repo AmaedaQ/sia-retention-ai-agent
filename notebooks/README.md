@@ -31,9 +31,34 @@ account's network policy blocks huggingface.co from both the cloud
 sandbox and the linked device, so run it from Colab or your own machine
 (see the script's docstring for exact steps).
 
-## `02_train_model.ipynb` (Phase 2, not yet written)
+## `02_train_model.py` (Phase 2 — code written, not yet run)
 
-Will train and evaluate the churn model on `data/processed/` and push it
-to Hugging Face Model Hub.
+Trains an XGBoost classifier on `data/processed/`, evaluates it on
+train/val/test, and -- the honest part -- scores the OLD hand-written
+formula from `backend/data_generator.py` on the exact same test rows
+with the same metric (ROC-AUC), so the comparison in `artifacts/metrics.json`
+is real, not asserted. Explains the model globally with SHAP
+(`explain_global`), ranking features by mean |SHAP| on the test split.
+
+This has NOT been executed yet: installing scikit-learn/xgboost/shap on
+this account's linked device timed out repeatedly (dependency resolution
+took longer than the shell's time budget), so it needs to run in Colab,
+where installs are fast and a free GPU/CPU is available. `tests/test_train_model.py`
+has 5 tests on tiny synthetic data (`pytest.importorskip` skips them
+gracefully wherever xgboost/shap aren't installed) -- run those first in
+Colab to catch any issue before the real training run.
+
+Run in Colab:
+```
+!git clone https://github.com/AmaedaQ/sia-retention-ai-agent.git
+%cd sia-retention-ai-agent
+!pip install -q scikit-learn xgboost shap joblib
+!python -m pytest tests/test_train_model.py -v
+!python notebooks/02_train_model.py
+```
+
+`scripts/push_model_to_hf.py` pushes `artifacts/` to a public Hugging
+Face Model repo (also not run from here -- same network restriction as
+Phase 1's dataset push).
 
 See the execution plan doc for the full phase breakdown.
