@@ -134,6 +134,20 @@ def explain_global(model: xgb.XGBClassifier, X: pd.DataFrame, top_k: int = 5) ->
     return [{"feature": f, "mean_abs_shap": round(float(v), 4)} for f, v in ranked]
 
 
+def raw_test_scores(model: xgb.XGBClassifier, X: pd.DataFrame, y: pd.Series, formula_scores: np.ndarray) -> dict:
+    """Per-row test-set truth/scores, saved alongside the aggregate metrics
+    so the dashboard's Evaluation tab can draw a real ROC/PR curve and
+    confusion matrix instead of just reporting a single AUC number. Test
+    split only (small, ~1k rows) -- never train/val, to avoid any chance
+    of these numbers being read as anything other than held-out performance."""
+    proba = model.predict_proba(X)[:, 1]
+    return {
+        "y_true": [int(v) for v in y.to_numpy()],
+        "model_proba": [round(float(v), 6) for v in proba],
+        "old_formula_score": [round(float(v), 6) for v in formula_scores],
+    }
+
+
 MODEL_CARD_TEMPLATE = """---
 license: cc-by-4.0
 tags:
@@ -210,6 +224,8 @@ def main():
         json.dump(feature_columns, f, indent=2)
     with open(os.path.join(ARTIFACT_DIR, "metrics.json"), "w") as f:
         json.dump(results, f, indent=2)
+    with open(os.path.join(ARTIFACT_DIR, "test_raw.json"), "w") as f:
+        json.dump(raw_test_scores(model, X_test, y_test, baseline_formula_score(test_df)), f)
 
     top_lines = "\n".join(f"- `{r['feature']}`: {r['mean_abs_shap']}" for r in top_features)
     with open(os.path.join(ARTIFACT_DIR, "MODEL_CARD.md"), "w") as f:

@@ -55,12 +55,22 @@ api = HfApi(token=TOKEN)
 print(f"Creating (or reusing) model repo {REPO_ID} ...")
 create_repo(REPO_ID, token=TOKEN, repo_type="model", exist_ok=True)
 
-for fname, dest in [
+upload_pairs = [
     ("model.joblib", "model.joblib"),
     ("feature_columns.json", "feature_columns.json"),
     ("metrics.json", "metrics.json"),
     ("MODEL_CARD.md", "README.md"),
-]:
+]
+# test_raw.json (per-row test predictions) is optional -- older training
+# runs won't have produced it. When present, the dashboard's Evaluation
+# tab uses it to draw a real ROC/PR curve and confusion matrix instead of
+# just the aggregate metrics.
+if os.path.exists(os.path.join(ARTIFACT_DIR, "test_raw.json")):
+    upload_pairs.append(("test_raw.json", "test_raw.json"))
+else:
+    print("Note: artifacts/test_raw.json not found -- skipping (re-run notebooks/02_train_model.py to produce it).")
+
+for fname, dest in upload_pairs:
     print(f"Uploading {fname} -> {dest} ...")
     api.upload_file(
         path_or_fileobj=os.path.join(ARTIFACT_DIR, fname),

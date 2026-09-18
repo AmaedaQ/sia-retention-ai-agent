@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import sys
 import os
 import plotly.express as px
@@ -14,6 +15,7 @@ if root_dir not in sys.path:
 
 from backend.graph import retention_app
 from backend.agents.action import execute_retention_action
+from config.settings import settings
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -408,6 +410,39 @@ def get_analytics():
             return pd.DataFrame()
     return pd.DataFrame()
 
+@st.cache_data(ttl=300)
+def get_model_evaluation():
+    """Pulls the trained model's real, published evaluation artifacts
+    (Phase 2's notebooks/02_train_model.py output) from Hugging Face --
+    never fabricated, and cached for 5 min so the Evaluation tab doesn't
+    re-download on every rerun. Returns a dict:
+        {"available": bool, "reason": str | None,
+         "metrics": dict | None, "raw": dict | None}
+    "raw" (per-row test predictions) is optional -- older training runs
+    didn't publish it, so ROC/PR curves and the confusion matrix are only
+    shown when it's present; the aggregate metrics table always is.
+    """
+    if not settings.use_ml_model:
+        return {"available": False, "reason": "USE_ML_MODEL is off -- the app is scoring with the original formula, not the trained model.", "metrics": None, "raw": None}
+    if not settings.hf_model_repo:
+        return {"available": False, "reason": "HF_MODEL_REPO is not configured.", "metrics": None, "raw": None}
+    try:
+        from huggingface_hub import hf_hub_download
+        import json as _json
+        metrics_path = hf_hub_download(repo_id=settings.hf_model_repo, filename="metrics.json", revision=settings.hf_model_revision)
+        with open(metrics_path) as f:
+            metrics = _json.load(f)
+        raw = None
+        try:
+            raw_path = hf_hub_download(repo_id=settings.hf_model_repo, filename="test_raw.json", revision=settings.hf_model_revision)
+            with open(raw_path) as f:
+                raw = _json.load(f)
+        except Exception:
+            pass  # optional -- older publishes won't have it
+        return {"available": True, "reason": None, "metrics": metrics, "raw": raw}
+    except Exception as e:
+        return {"available": False, "reason": f"could not fetch published evaluation artifacts: {e}", "metrics": None, "raw": None}
+
 # --- SIDEBAR: CONTROL PANEL ---
 with st.sidebar:
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Jazz_logo.svg/1200px-Jazz_logo.svg.png", width=80)
@@ -474,7 +509,7 @@ with col2:
     """, unsafe_allow_html=True)
 
 # --- TABS ---
-tab1, tab2, tab3 = st.tabs(["📊 Active Queue", "📈 Analytics", "📜 History"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Active Queue", "📈 Analytics", "📜 History", "🧪 Evaluation"])
 
 # --- TAB 1: ACTIVE QUEUE ---
 with tab1:
@@ -495,7 +530,12 @@ with tab1:
                 risky_users_count = len(st.session_state.results.get('risky_users', []))
                 st.metric("Risk Pool", risky_users_count)
             with col3:
-                st.metric("Success Rate", "94.2%")
+                _eval = get_model_evaluation()
+                if _eval["available"]:
+                    _test_auc = _eval["metrics"]["splits"][-1]["model"]["roc_auc"]
+                    st.metric("Model ROC-AUC (test)", f"{_test_auc:.3f}", help=f"From the published model at {settings.hf_model_repo}@{settings.hf_model_revision} -- see the Evaluation tab.")
+                else:
+                    st.metric("Scoring Mode", "Formula", help="USE_ML_MODEL is off, or the trained model isn't reachable -- see the Evaluation tab for details.")
             with col4:
                 st.metric("AI Status", "Active")
             
@@ -711,3 +751,185 @@ with tab3:
         )
     else:
         st.info("No historical data available yet. Execute retention actions to build your audit trail.")
+
+# --- TAB 4: EVALUATION ---
+with tab4:
+    st.markdown('<div class="section-header">Model Evaluation</div>', unsafe_allow_html=True)
+
+    eval_data = get_model_evaluation()
+
+    if not eval_data["available"]:
+        st.warning(f"⚠️ No live model evaluation to show: {eval_data['reason']}")
+        st.markdown(
+            "The dashboard falls back to the original hand-written formula "
+            "(`backend/data_generator.py`) whenever the trained model isn't "
+            "configured or reachable -- that's by design (`USE_ML_MODEL` in "
+            "`config/settings.py`), not a bug. Set `USE_ML_MODEL=true`, "
+            "`HF_MODEL_REPO`, and `HF_MODEL_REVISION` in `.env` to point at a "
+            "published model and this tab will populate with its real, "
+            "published metrics."
+        )
+    else:
+        metrics = eval_data["metrics"]
+        raw = eval_data["raw"]
+        test_row = metrics["splits"][-1]
+
+        # --- Model version badge + headline comparison ---
+        badge_col, auc_col, formula_col = st.columns(3)
+        with badge_col:
+            st.metric("Model Version", metrics.get("model_version", "unknown"), help=f"Published at huggingface.co/{settings.hf_model_repo}")
+        with auc_col:
+            st.metric("Test ROC-AUC (model)", f"{test_row['model']['roc_auc']:.4f}")
+        with formula_col:
+            delta = test_row['model']['roc_auc'] - test_row['old_formula_roc_auc']
+            st.metric("Test ROC-AUC (old formula)", f"{test_row['old_formula_roc_auc']:.4f}", delta=f"{delta:+.4f} vs. model", delta_color="inverse")
+
+        st.caption(
+            "Both scores are computed on the exact same held-out test rows -- "
+            "the old formula is the literal one from `backend/data_generator.py` "
+            "(`(days_since_last_recharge/45)*0.4 + (1-signal_strength_score)*0.4 "
+            "+ support_tickets_open*0.2`), scored here only for comparison, never "
+            "used for actual predictions once `USE_ML_MODEL` is on."
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # --- Per-split metrics table (real numbers from metrics.json) ---
+        st.markdown("#### Metrics by split")
+        rows = []
+        for split in metrics["splits"]:
+            m = split["model"]
+            rows.append({
+                "split": split["split"],
+                "n": split["n"],
+                "accuracy": m["accuracy"],
+                "precision": m["precision"],
+                "recall": m["recall"],
+                "f1": m["f1"],
+                "roc_auc (model)": m["roc_auc"],
+                "roc_auc (old formula)": split["old_formula_roc_auc"],
+            })
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        chart_col1, chart_col2 = st.columns(2)
+
+        with chart_col1:
+            st.markdown("#### Model vs. old formula (ROC-AUC)")
+            bar_df = pd.DataFrame(rows)
+            fig_bar = go.Figure(data=[
+                go.Bar(name="Model", x=bar_df["split"], y=bar_df["roc_auc (model)"], marker_color="#e30613"),
+                go.Bar(name="Old formula", x=bar_df["split"], y=bar_df["roc_auc (old formula)"], marker_color="#4a5568"),
+            ])
+            fig_bar.update_layout(
+                barmode="group",
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font_color="#ffffff",
+                yaxis=dict(showgrid=True, gridcolor="#2a3142", title="ROC-AUC", range=[0, 1]),
+                xaxis=dict(title=""),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                margin=dict(l=20, r=20, t=40, b=20),
+            )
+            st.plotly_chart(fig_bar, width="stretch", key="eval_auc_bar")
+
+        with chart_col2:
+            st.markdown("#### Top features (mean |SHAP|, test split)")
+            top_features = metrics.get("top_features_test", [])
+            if top_features:
+                shap_df = pd.DataFrame(top_features).sort_values("mean_abs_shap")
+                fig_shap = go.Figure(go.Bar(
+                    x=shap_df["mean_abs_shap"], y=shap_df["feature"], orientation="h",
+                    marker_color="#00d4ff",
+                ))
+                fig_shap.update_layout(
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font_color="#ffffff",
+                    xaxis=dict(showgrid=True, gridcolor="#2a3142", title="mean |SHAP value|"),
+                    yaxis=dict(title=""),
+                    margin=dict(l=20, r=20, t=40, b=20),
+                )
+                st.plotly_chart(fig_shap, width="stretch", key="eval_shap_bar")
+            else:
+                st.info("No SHAP summary published with this model version.")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # --- ROC/PR curves + confusion matrix: only when per-row test
+        # predictions were published (test_raw.json, added after Phase 4).
+        # Older model versions only published aggregate metrics, so this
+        # section is honest about being unavailable rather than faking it.
+        if raw is not None:
+            y_true = np.array(raw["y_true"])
+            y_proba = np.array(raw["model_proba"])
+
+            st.markdown("#### ROC and Precision-Recall curves (real test-set predictions)")
+            curve_col1, curve_col2 = st.columns(2)
+
+            thresholds = np.linspace(0.0, 1.0, 101)
+            tprs, fprs, precisions, recalls = [], [], [], []
+            P = y_true.sum()
+            N = len(y_true) - P
+            for t in thresholds:
+                pred = (y_proba >= t).astype(int)
+                tp = int(((pred == 1) & (y_true == 1)).sum())
+                fp = int(((pred == 1) & (y_true == 0)).sum())
+                fn = int(((pred == 0) & (y_true == 1)).sum())
+                tprs.append(tp / P if P else 0.0)
+                fprs.append(fp / N if N else 0.0)
+                precisions.append(tp / (tp + fp) if (tp + fp) else 1.0)
+                recalls.append(tp / P if P else 0.0)
+
+            with curve_col1:
+                fig_roc = go.Figure()
+                fig_roc.add_trace(go.Scatter(x=fprs, y=tprs, mode="lines", name="Model", line=dict(color="#e30613", width=3)))
+                fig_roc.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode="lines", name="Random", line=dict(color="#4a5568", dash="dash")))
+                fig_roc.update_layout(
+                    title="ROC curve",
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#ffffff",
+                    xaxis=dict(title="False Positive Rate", showgrid=True, gridcolor="#2a3142"),
+                    yaxis=dict(title="True Positive Rate", showgrid=True, gridcolor="#2a3142"),
+                    margin=dict(l=20, r=20, t=40, b=20),
+                )
+                st.plotly_chart(fig_roc, width="stretch", key="eval_roc")
+
+            with curve_col2:
+                fig_pr = go.Figure()
+                fig_pr.add_trace(go.Scatter(x=recalls, y=precisions, mode="lines", name="Model", line=dict(color="#00d4ff", width=3)))
+                fig_pr.update_layout(
+                    title="Precision-Recall curve",
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#ffffff",
+                    xaxis=dict(title="Recall", showgrid=True, gridcolor="#2a3142"),
+                    yaxis=dict(title="Precision", showgrid=True, gridcolor="#2a3142"),
+                    margin=dict(l=20, r=20, t=40, b=20),
+                )
+                st.plotly_chart(fig_pr, width="stretch", key="eval_pr")
+
+            st.markdown("#### Confusion matrix (test split, threshold = 0.5)")
+            pred_50 = (y_proba >= 0.5).astype(int)
+            tp = int(((pred_50 == 1) & (y_true == 1)).sum())
+            fp = int(((pred_50 == 1) & (y_true == 0)).sum())
+            fn = int(((pred_50 == 0) & (y_true == 1)).sum())
+            tn = int(((pred_50 == 0) & (y_true == 0)).sum())
+            cm = [[tn, fp], [fn, tp]]
+            fig_cm = go.Figure(data=go.Heatmap(
+                z=cm, x=["Pred: Stay", "Pred: Churn"], y=["Actual: Stay", "Actual: Churn"],
+                text=cm, texttemplate="%{text}", colorscale=[[0, "#131820"], [1, "#e30613"]],
+                showscale=False,
+            ))
+            fig_cm.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#ffffff",
+                margin=dict(l=20, r=20, t=20, b=20), height=320,
+            )
+            st.plotly_chart(fig_cm, width="stretch", key="eval_cm")
+        else:
+            st.info(
+                "ℹ️ Per-row test predictions (`test_raw.json`) weren't published with "
+                "this model version, so a real ROC/PR curve and confusion matrix "
+                "can't be drawn here -- only the aggregate metrics above, which are "
+                "real. Re-run `notebooks/02_train_model.py` (it now saves "
+                "`test_raw.json` alongside `metrics.json`) and re-publish with "
+                "`scripts/push_model_to_hf.py` to unlock this section."
+            )

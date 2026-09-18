@@ -102,22 +102,48 @@ streamlit run frontend/app.py
 * **Hyper-Personalization**
   Replaces generic campaigns with individualized retention strategies.
 
-## Roadmap: real ML risk scoring (in progress)
+## Real ML risk scoring: before and after
 
-The churn-risk score currently comes from a hand-written formula over
-synthetic data — honest, but not a trained model. Phase 0 (data/model
-contracts, config, tests) and Phase 1 (real dataset pipeline) are done;
-Phase 2 (a trained XGBoost model, real test ROC-AUC 0.79 vs. the old
-formula's 0.51, published at
-[amaedaqureshi/sia-churn-model](https://huggingface.co/amaedaqureshi/sia-churn-model))
-and Phase 3 (wiring that model into `backend/models/loader.py` and
-`backend/models/predict.py`, behind the `USE_ML_MODEL` feature flag, with
-a safe fallback to the original formula on any failure) are both done.
-Phase 4 (retiring the formula path once the model's been trusted in
-practice, and redeploying the dashboard with real metrics instead of the
-hardcoded 94.2%) is what's left. All of this runs on free-tier compute
-(Google Colab + Hugging Face Hub). See `backend/schemas.py` and
-`config/settings.py` for the contracts this is built around.
+**Before:** the churn-risk score came from a hand-written linear formula
+over synthetic demo data:
+
+```
+risk = (days_since_last_recharge / 45) * 0.4
+     + (1 - signal_strength_score) * 0.4
+     + support_tickets_open * 0.2
+```
+
+No training, no validation, no honest accuracy number — the dashboard's
+old "Success Rate: 94.2%" metric was a hardcoded placeholder, not a
+measurement of anything.
+
+**After:** the score comes from a trained XGBoost classifier on the real
+[IBM/Kaggle Telco Customer Churn dataset](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
+(7,032 real customers after cleaning), mapped to SIA's `Subscriber`
+schema and published openly:
+
+* Dataset: [amaedaqureshi/sia-churn-dataset](https://huggingface.co/datasets/amaedaqureshi/sia-churn-dataset)
+* Model: [amaedaqureshi/sia-churn-model](https://huggingface.co/amaedaqureshi/sia-churn-model) (`v1.0.0`)
+* Test-set ROC-AUC: **0.7869** (model) vs. **0.5066** (the old formula,
+  scored on the exact same held-out rows) — the full breakdown by split,
+  plus the SHAP feature-importance ranking, is in the model repo's
+  `metrics.json` and rendered live in the dashboard's **Evaluation** tab.
+
+The model is wired in behind a feature flag (`USE_ML_MODEL` in
+`config/settings.py`): when it's off, or the model can't be reached,
+`backend/agents/monitor.py` falls back to the original formula
+automatically — nothing breaks, it's just less accurate. Predictions also
+carry a `risk_source` tag (`"model"` or `"formula"`) and, when the model
+is used, per-prediction SHAP top factors, so it's always visible which
+path produced a given score.
+
+This was built in five phases (0: contracts/config/tests, 1: real dataset
+pipeline, 2: training + evaluation + explainability, 3: wiring the model
+into the live pipeline, 4: retiring the hardcoded metric and adding this
+section plus the dashboard's Evaluation tab), entirely on free-tier
+compute (Google Colab + Hugging Face Hub, no paid GPU or API needed). See
+`backend/schemas.py` and `config/settings.py` for the contracts this is
+built around, and `notebooks/README.md` for how to reproduce training.
 
 **Phase 1 status:** `notebooks/01_data_pipeline.py` loads the real
 [IBM/Kaggle Telco Customer Churn dataset](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)

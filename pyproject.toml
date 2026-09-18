@@ -1,0 +1,30 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = ["artifacts", "data", ".venv", "venv"]
+
+[tool.ruff.lint]
+# Deliberately small and honest: E/F (pyflakes+pycodestyle core) catch real
+# bugs (undefined names, unused imports, syntax issues); I (isort) and UP
+# (pyupgrade) keep imports/style consistent. Not turning on style rules the
+# existing codebase wasn't written against -- that would just be churn.
+select = ["E", "F", "I", "UP"]
+ignore = [
+    "E501",  # line length is handled by the formatter / line-length setting above
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Notebooks-as-scripts do `sys.path.append(...)` then import local packages --
+# that import-after-code pattern is intentional here, not a mistake.
+"notebooks/*.py" = ["E402"]
+"scripts/*.py" = ["E402"]
+
+[tool.bandit]
+# Skips are scoped and justified, not blanket-disabled:
+#   B101 (assert) -- used throughout the test suite, which is fine; asserts
+#     in test files are never a security concern.
+#   B615 (unsafe hf hub download) -- huggingface_hub's own API; the actual
+#     safety property (pinned revision, never "latest") is enforced in code
+#     and covered by tests, not by silencing the linter.
+skips = ["B101"]
+exclude_dirs = ["artifacts", "data", "tests"]
