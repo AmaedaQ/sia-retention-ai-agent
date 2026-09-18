@@ -154,6 +154,51 @@ stratified train/val/test split to `data/processed/` — see
 `data/processed/DATASET_CARD.md` for exactly what's real vs. synthetic,
 and `notebooks/README.md` for how to push the result to Hugging Face.
 
+### Model evaluation (live from the dashboard's Evaluation tab)
+
+Real numbers, straight from the published model at
+[amaedaqureshi/sia-churn-model](https://huggingface.co/amaedaqureshi/sia-churn-model)
+(`v1.0.0`), rendered by the Streamlit app's **Evaluation** tab:
+
+| Metric | Value |
+|---|---|
+| Model Version | `v1.0.0` |
+| Test ROC-AUC (model) | **0.7869** |
+| Test ROC-AUC (old formula) | 0.5066 (`-0.2803` vs. model) |
+
+Both scores are computed on the exact same held-out test rows — the old
+formula is the literal one from `backend/data_generator.py`
+(`(days_since_last_recharge/45)*0.4 + (1-signal_strength_score)*0.4 +
+support_tickets_open*0.2`), scored here only for comparison, never used
+for actual predictions once `USE_ML_MODEL` is on.
+
+**Model vs. old formula, ROC-AUC by split:**
+
+![Model vs. old formula ROC-AUC by split](docs/screenshots/roc_auc_comparison.png)
+
+**Top features by mean absolute SHAP value (test split):**
+
+![Top SHAP features](docs/screenshots/shap_top_features.png)
+
+`plan_Flexi` and `plan_Premium` dominate, followed by `avg_monthly_spend`
+and `data_usage_gb` — the model is keying off real subscriber behavior,
+not noise. `signal_strength_score` (one of the four synthetic bridge
+columns — see `data/processed/DATASET_CARD.md`) has the smallest but
+still non-trivial weight, worth remembering before quoting it in any
+user-facing explanation.
+
+A real ROC curve, PR curve, and confusion matrix are supported by the
+Evaluation tab too, but need `test_raw.json` (per-row test predictions)
+published alongside `metrics.json` — see `notebooks/02_train_model.py`
+and `scripts/push_model_to_hf.py`. **Open item:** a retrain was run and
+`test_raw.json` was uploaded to the `amaedaqureshi/sia-churn-model` repo,
+but the dashboard still reports it as missing under the `v1.0.0` revision
+pin — most likely because Hugging Face's `create_tag(..., exist_ok=True)`
+doesn't move an existing tag to a new commit, so `v1.0.0` may still point
+at the original publish. Needs checking (either re-tag to a new version
+like `v1.0.1`, or delete and recreate the `v1.0.0` tag) before the curves
+will show up live.
+
 ---
 
 ---
