@@ -1431,7 +1431,7 @@ with tab0:
             rows = []
             for _, r in top_risk.iterrows():
                 uid = str(r.get("user_id", "—"))
-                plan = str(r.get("plan_type", "—")) if "plan_type" in r else "—"
+                plan = str(r.get("active_plan", "—")) if "active_plan" in r else "—"
                 spend = f"{float(r.get('avg_monthly_spend', 0)):,.0f}" if "avg_monthly_spend" in r else "—"
                 days = f"{int(r.get('days_since_last_recharge', 0))}" if "days_since_last_recharge" in r else "—"
                 score = r.get("churn_risk_score", None)
@@ -1455,9 +1455,9 @@ with tab0:
                 section_header("02", "Avg. risk by plan", "Mean churn score, plan-wise"),
                 unsafe_allow_html=True,
             )
-            if "plan_type" in portfolio.columns and "churn_risk_score" in portfolio.columns:
+            if "active_plan" in portfolio.columns and "churn_risk_score" in portfolio.columns:
                 plan_risk = (
-                    portfolio.groupby("plan_type")["churn_risk_score"]
+                    portfolio.groupby("active_plan")["churn_risk_score"]
                     .mean()
                     .sort_values(ascending=False)
                 )
