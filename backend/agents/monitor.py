@@ -15,19 +15,21 @@ def _score_with_model(df: pd.DataFrame) -> pd.DataFrame:
     """Scores every row with the trained model, replacing the static
     churn_risk_score column that jazz_users.csv was generated with.
 
-    Known limitation, surfaced rather than hidden: jazz_users.csv's
-    active_plan values ("Weekly Mega", "Monthly Super", "Daily Social")
-    are this demo dataset's original placeholder names -- they don't
-    match the plan categories the model was actually trained on (Flexi /
-    Standard / Premium, derived from the real Telco dataset's Contract
-    field in Phase 1). The model still scores these rows fine on the
-    other four real-shaped features, but treats every row's plan as
-    "unknown" (all plan_* columns zero) rather than using plan type,
-    which Phase 2's SHAP analysis found to be the single strongest
-    predictor. Scores on this specific demo file are usable but weaker
-    than they'd be on data whose plan names actually match training --
-    worth aligning data_generator.py's plan names to Flexi/Standard/
-    Premium if this demo data is going to be used for more than a UI demo.
+    Fixed bug, documented so it isn't reintroduced: jazz_users.csv's
+    active_plan values used to be placeholder names ("Weekly Mega",
+    "Monthly Super", "Daily Social") that didn't match the plan
+    categories the model was actually trained on (Flexi / Standard /
+    Premium, from the real Telco dataset's Contract field), and
+    avg_monthly_spend was drawn from a ~200-5000 range vs. the model's
+    real training range of ~18-119. Combined, every demo row landed far
+    outside the model's training distribution on its single strongest
+    predictor (plan type, per Phase 2's SHAP analysis) and its spend
+    feature -- which silently collapsed every prediction toward one
+    extreme and made every scan return 0 flagged customers with no
+    visible error. data_generator.py now draws both fields on the same
+    scale/vocabulary the model was trained on (see its own comment and
+    data/processed/DATASET_CARD.md). This function keeps the
+    all-zero-plan check below as a guard in case that ever regresses.
     """
     global _warned_plan_mismatch
     records = df.to_dict(orient="records")
@@ -78,6 +80,14 @@ def monitor_churn_risks(threshold=0.7):
                 df = _score_with_model(df)
             except ModelUnavailable as e:
                 print(f"[MONITOR] ML model unavailable ({e}) -- falling back to the formula's stored scores.")
+                df["risk_source"] = "formula"
+            except Exception as e:  # noqa: BLE001 -- a scoring bug must degrade to the
+                # formula, never silently zero out every user. This is deliberately
+                # broader than ModelUnavailable: loader.py already wraps every load
+                # failure as ModelUnavailable, so anything landing here is a bug in
+                # the scoring path itself (predict.py) -- still not something that
+                # should turn a scan into "0 customers flagged" with no visible error.
+                print(f"[MONITOR] ML scoring failed unexpectedly ({e!r}) -- falling back to the formula's stored scores.")
                 df["risk_source"] = "formula"
         else:
             df["risk_source"] = "formula"

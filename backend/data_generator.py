@@ -8,13 +8,22 @@ def generate_jazz_data():
     np.random.seed(42) 
     n_users = 1000
     
+    # avg_monthly_spend and active_plan are deliberately drawn on the same
+    # scale/vocabulary as the real training data (see
+    # data/processed/DATASET_CARD.md: MonthlyCharges 18.25-118.75,
+    # Contract -> Flexi/Standard/Premium) -- not arbitrary demo numbers.
+    # Feeding the trained model values outside its training distribution
+    # (e.g. an active_plan it never saw, or a spend range ~30x larger than
+    # anything it trained on) silently collapses every prediction toward
+    # one extreme, which is exactly what caused every scan to return 0
+    # flagged customers once USE_ML_MODEL was turned on for this demo data.
     data = {
         'user_id': [f"JAZZ_{i:04d}" for i in range(n_users)],
-        'avg_monthly_spend': np.random.uniform(200, 5000, n_users).round(2),
+        'avg_monthly_spend': np.random.uniform(18.25, 118.75, n_users).round(2),
         'data_usage_gb': np.random.uniform(0, 50, n_users).round(2),
         'days_since_last_recharge': np.random.randint(0, 45, n_users),
         'signal_strength_score': np.random.uniform(0.1, 1.0, n_users).round(2),
-        'active_plan': np.random.choice(['Weekly Mega', 'Monthly Super', 'Daily Social'], n_users),
+        'active_plan': np.random.choice(['Flexi', 'Standard', 'Premium'], n_users),
         'support_tickets_open': np.random.randint(0, 3, n_users)
     }
 
