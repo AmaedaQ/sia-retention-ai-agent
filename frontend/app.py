@@ -461,6 +461,65 @@ st.markdown("""
 
     /* Hide Streamlit's default sidebar nav (we don't use multipage) */
     [data-testid="stSidebarNav"] { display: none; }
+
+    /* ====== ICON FONT FIX ======
+       Streamlit renders its own chrome (sidebar collapse arrow,
+       expander chevrons, etc.) as ligature text in a Material
+       Symbols font -- e.g. the sidebar arrow is literally the text
+       "keyboard_double_arrow_right", rendered as a glyph only when
+       that font applies. The global font-family rule above was
+       overriding it everywhere, so it showed as plain text instead
+       of an icon. Restore the icon font specifically for those
+       elements without touching anything else. */
+    [data-testid="stIconMaterial"],
+    span[class*="material-symbols"],
+    span[class*="material-icons"] {
+        font-family: 'Material Symbols Rounded', 'Material Symbols Outlined', 'Material Icons' !important;
+    }
+
+    /* ====== RISK CHIPS ====== */
+    .risk-chip {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.68rem; font-weight: 700;
+        padding: 0.28rem 0.6rem; border-radius: 100px;
+        letter-spacing: 0.3px; white-space: nowrap;
+    }
+    .risk-chip.high { background: rgba(226,35,26,0.12); color: #ff6b61; border: 1px solid rgba(226,35,26,0.4); }
+    .risk-chip.med  { background: rgba(242,169,60,0.12); color: var(--warning); border: 1px solid rgba(242,169,60,0.4); }
+    .risk-chip.low  { background: rgba(45,212,167,0.12); color: var(--success); border: 1px solid rgba(45,212,167,0.4); }
+
+    /* ====== KPI TILES (dashboard) ====== */
+    .kpi-tile {
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 14px; padding: 1.1rem 1.25rem;
+        display: flex; flex-direction: column; gap: 0.35rem;
+        height: 100%;
+    }
+    .kpi-tile .kpi-icon { font-size: 1.1rem; opacity: 0.85; }
+    .kpi-tile .kpi-label {
+        font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 1.1px; color: var(--text-secondary);
+    }
+    .kpi-tile .kpi-value {
+        font-family: 'Sora', sans-serif; font-size: 1.65rem; font-weight: 700;
+        color: var(--text-primary); font-variant-numeric: tabular-nums;
+    }
+    .kpi-tile .kpi-sub { font-size: 0.74rem; color: var(--text-muted); }
+
+    /* ====== PROGRESS BAR (plan risk breakdown) ====== */
+    .plan-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.65rem; }
+    .plan-row .plan-name {
+        width: 90px; flex-shrink: 0; font-size: 0.8rem; font-weight: 600; color: var(--text-primary);
+    }
+    .plan-row .plan-track {
+        flex: 1; height: 8px; background: var(--bg-elevated); border-radius: 4px; overflow: hidden;
+    }
+    .plan-row .plan-fill { height: 100%; border-radius: 4px; }
+    .plan-row .plan-val {
+        width: 46px; flex-shrink: 0; text-align: right;
+        font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--text-secondary);
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -489,6 +548,20 @@ def log_event(msg):
         st.session_state.agent_logs = st.session_state.agent_logs[-50:]
 
 
+def risk_tier(score):
+    """Buckets a churn_risk_score into (label, css-class) for the
+    high/medium/low chips used on the Dashboard and Active Queue."""
+    try:
+        score = float(score)
+    except (TypeError, ValueError):
+        return "Unknown", "med"
+    if score >= 0.7:
+        return "High", "high"
+    if score >= 0.5:
+        return "Medium", "med"
+    return "Low", "low"
+
+
 @st.cache_data(ttl=60)
 def get_analytics():
     """Load and merge analytics data with caching"""
@@ -502,6 +575,23 @@ def get_analytics():
         except Exception as e:
             log_event(f"Error loading analytics: {str(e)}")
             return pd.DataFrame()
+    return pd.DataFrame()
+
+
+@st.cache_data(ttl=60)
+def get_portfolio():
+    """The full customer base (not just the ones already actioned) --
+    powers the Dashboard tab's business-level KPIs and breakdowns.
+    Uses the same static churn_risk_score jazz_users.csv ships with,
+    same as every other read of this file elsewhere in the app; a
+    scan re-scores with the live model/threshold on top of this."""
+    if os.path.exists(USER_DATA_PATH):
+        try:
+            df = pd.read_csv(USER_DATA_PATH)
+            if not df.empty:
+                return df
+        except Exception as e:
+            log_event(f"Error loading portfolio: {str(e)}")
     return pd.DataFrame()
 
 
@@ -623,12 +713,146 @@ st.markdown("""
 # ============================================================
 # TABS
 # ============================================================
-tab1, tab2, tab3, tab4 = st.tabs([
+tab0, tab1, tab2, tab3, tab4 = st.tabs([
+    "🏠  Dashboard",
     "📊  Active Queue",
     "📈  Analytics",
     "📜  History",
     "🧪  Evaluation"
 ])
+
+
+# ============================================================
+# TAB 0: DASHBOARD -- a real, at-a-glance view of the whole
+# customer portfolio (not just what's been scanned/actioned this
+# session), so there's always something worth looking at even
+# before you've run a scan.
+# ============================================================
+with tab0:
+    st.markdown('<div class="section-head"><span class="bar"></span><span class="label">Business Overview</span></div>', unsafe_allow_html=True)
+
+    portfolio = get_portfolio()
+    logs_df = get_analytics()
+
+    if portfolio.empty:
+        st.markdown("""
+            <div class="panel">
+                <div class="icon">🏠</div>
+                <div class="title">No customer data loaded</div>
+                <div class="desc">backend/data/jazz_users.csv wasn't found or is empty.</div>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        at_risk_df = portfolio[portfolio['churn_risk_score'] >= threshold] if 'churn_risk_score' in portfolio.columns else portfolio.iloc[0:0]
+        at_risk_count = len(at_risk_df)
+        revenue_at_risk = at_risk_df['avg_monthly_spend'].sum() if 'avg_monthly_spend' in at_risk_df.columns else 0.0
+        offers_sent_total = len(logs_df) if not logs_df.empty else 0
+        reached_ids = logs_df['user_id'].nunique() if not logs_df.empty else 0
+        coverage = (reached_ids / at_risk_count * 100) if at_risk_count else 0.0
+
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
+            st.markdown(f"""
+                <div class="kpi-tile">
+                    <div class="kpi-icon">👥</div>
+                    <div class="kpi-label">Total customers</div>
+                    <div class="kpi-value">{len(portfolio):,}</div>
+                    <div class="kpi-sub">in the active portfolio</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with k2:
+            st.markdown(f"""
+                <div class="kpi-tile">
+                    <div class="kpi-icon">⚠️</div>
+                    <div class="kpi-label">At risk now</div>
+                    <div class="kpi-value">{at_risk_count:,}</div>
+                    <div class="kpi-sub">at ≥{threshold:.0%} risk</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with k3:
+            st.markdown(f"""
+                <div class="kpi-tile">
+                    <div class="kpi-icon">💰</div>
+                    <div class="kpi-label">Spend at risk / mo</div>
+                    <div class="kpi-value">{revenue_at_risk:,.0f}</div>
+                    <div class="kpi-sub">combined avg. monthly spend</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with k4:
+            st.markdown(f"""
+                <div class="kpi-tile">
+                    <div class="kpi-icon">🎯</div>
+                    <div class="kpi-label">Offers sent</div>
+                    <div class="kpi-value">{offers_sent_total:,}</div>
+                    <div class="kpi-sub">{coverage:.0f}% of at-risk reached</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        col_left, col_right = st.columns([3, 2])
+
+        with col_left:
+            st.markdown('<div class="section-head"><span class="bar"></span><span class="label">Highest-risk customers</span></div>', unsafe_allow_html=True)
+            needed_cols = {'user_id', 'active_plan', 'avg_monthly_spend', 'days_since_last_recharge', 'churn_risk_score'}
+            if needed_cols.issubset(portfolio.columns):
+                top10 = portfolio.sort_values('churn_risk_score', ascending=False).head(10)
+                top10_display = top10[['user_id', 'active_plan', 'avg_monthly_spend', 'days_since_last_recharge', 'churn_risk_score']].rename(columns={
+                    'user_id': 'Customer', 'active_plan': 'Plan', 'avg_monthly_spend': 'Spend/mo',
+                    'days_since_last_recharge': 'Days since recharge', 'churn_risk_score': 'Risk',
+                })
+                try:
+                    styled = top10_display.style.background_gradient(subset=['Risk'], cmap='Reds', vmin=0, vmax=1).format({'Spend/mo': '{:.2f}', 'Risk': '{:.2f}'})
+                    st.dataframe(styled, width="stretch", hide_index=True, height=390)
+                except Exception:
+                    st.dataframe(top10_display, width="stretch", hide_index=True, height=390)
+            else:
+                st.caption("Portfolio data is missing expected columns.")
+
+        with col_right:
+            st.markdown('<div class="section-head"><span class="bar"></span><span class="label">Avg. risk by plan</span></div>', unsafe_allow_html=True)
+            if {'active_plan', 'churn_risk_score'}.issubset(portfolio.columns):
+                by_plan = portfolio.groupby('active_plan')['churn_risk_score'].mean().sort_values(ascending=False)
+                max_val = by_plan.max() if len(by_plan) else 1
+                plan_colors = ["#e2231a", "#f2a93c", "#2dd4a7", "#22d3ee"]
+                rows_html = ""
+                for i, (plan, val) in enumerate(by_plan.items()):
+                    pct = (val / max_val * 100) if max_val else 0
+                    color = plan_colors[i % len(plan_colors)]
+                    rows_html += f"""
+                        <div class="plan-row">
+                            <div class="plan-name">{plan}</div>
+                            <div class="plan-track"><div class="plan-fill" style="width:{pct:.0f}%; background:{color};"></div></div>
+                            <div class="plan-val">{val:.2f}</div>
+                        </div>
+                    """
+                st.markdown(rows_html, unsafe_allow_html=True)
+            else:
+                st.caption("No plan data available.")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            st.markdown('<div class="section-head"><span class="bar"></span><span class="label">Model health</span></div>', unsafe_allow_html=True)
+            _eval_dash = get_model_evaluation()
+            if _eval_dash["available"]:
+                _auc = _eval_dash["metrics"]["splits"][-1]["model"]["roc_auc"]
+                st.markdown(f"""
+                    <div class="kpi-tile">
+                        <div class="kpi-icon">🧪</div>
+                        <div class="kpi-label">Scoring with</div>
+                        <div class="kpi-value" style="font-size:1.1rem;">{_eval_dash['metrics'].get('model_version', 'model')}</div>
+                        <div class="kpi-sub">Test ROC-AUC {_auc:.3f} · see the Evaluation tab</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                    <div class="kpi-tile">
+                        <div class="kpi-icon">🧮</div>
+                        <div class="kpi-label">Scoring with</div>
+                        <div class="kpi-value" style="font-size:1.1rem;">Formula</div>
+                        <div class="kpi-sub">trained model not active -- see the Evaluation tab</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
 
 # ============================================================
@@ -680,12 +904,22 @@ with tab1:
             """, unsafe_allow_html=True)
 
             # Action Cards
+            risky_by_id = {
+                str(u.get('user_id')): u.get('churn_risk_score')
+                for u in st.session_state.results.get('risky_users', [])
+            }
             for report in active_reports:
                 user_id = report.get('user_id', 'N/A')
                 offer = report.get('offer', 'N/A')
                 reasoning = report.get('reasoning', 'No reasoning provided')
 
                 initials = str(user_id)[:2].upper() if user_id != 'N/A' else '??'
+                risk_score = risky_by_id.get(str(user_id))
+                risk_label, risk_css = risk_tier(risk_score)
+                risk_chip_html = (
+                    f'<span class="risk-chip {risk_css}">{risk_label} · {risk_score:.2f}</span>'
+                    if risk_score is not None else ""
+                )
 
                 st.markdown(f"""
                     <div class="action-card">
@@ -697,7 +931,10 @@ with tab1:
                                     <div class="meta">Customer · Retention Target</div>
                                 </div>
                             </div>
-                            <span class="offer-badge">{offer}</span>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                {risk_chip_html}
+                                <span class="offer-badge">{offer}</span>
+                            </div>
                         </div>
                         <div class="reasoning">
                             <span class="label">Agent Reasoning</span>
