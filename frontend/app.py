@@ -27,37 +27,27 @@ st.set_page_config(
 )
 
 # ============================================================
-# DESIGN SYSTEM — Signal Room v5
-# ------------------------------------------------------------
-# Fixes vs. v4:
-#   1. Font rule is TARGETED (not universal) → sidebar chevron
-#      now renders correctly (was being crushed by Inter override).
-#   2. KPI tiles use min-height only, not fixed → no clipping.
-#   3. Tab bar scrolls horizontally on narrow viewports.
-#   4. Deeper surface hierarchy + accent glow rhythm.
-#   5. Sidebar collapse button is explicitly restyled and visible.
+# DESIGN SYSTEM — Signal Room v6
 # ============================================================
-
 st.markdown(
     """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
-/* ============================================================
-   1. DESIGN TOKENS
-   ============================================================ */
 :root {
     --primary:        #e2231a;
     --primary-soft:   #ff5c50;
     --primary-dim:    rgba(226, 35, 26, 0.14);
-    --primary-glow:   rgba(226, 35, 26, 0.35);
+    --primary-glow:   rgba(226, 35, 26, 0.40);
     --accent:         #22d3ee;
     --accent-dim:     rgba(34, 211, 238, 0.14);
-    --accent-glow:    rgba(34, 211, 238, 0.35);
+    --accent-glow:    rgba(34, 211, 238, 0.40);
     --success:        #2dd4a7;
     --success-dim:    rgba(45, 212, 167, 0.14);
+    --success-glow:   rgba(45, 212, 167, 0.40);
     --warning:        #f2a93c;
     --warning-dim:    rgba(242, 169, 60, 0.14);
+    --warning-glow:   rgba(242, 169, 60, 0.40);
     --bg-0:           #06070b;
     --bg-1:           #0a0c11;
     --bg-card:        #0f1218;
@@ -77,7 +67,7 @@ st.markdown(
 }
 
 /* ============================================================
-   2. CANVAS & GLOBAL RESET
+   CANVAS
    ============================================================ */
 [data-testid="stAppViewContainer"] {
     background:
@@ -96,19 +86,22 @@ st.markdown(
     mask-image: radial-gradient(ellipse at 50% 0%, black 20%, transparent 75%);
 }
 .block-container {
-    padding-top: 2rem !important;
-    padding-bottom: 3rem !important;
-    max-width: 1380px;
+    padding-top: 1.75rem !important;
+    padding-bottom: 5rem !important;
+    max-width: 1400px;
     position: relative;
     z-index: 1;
 }
 [data-testid="stHeader"] { background: transparent; height: 0; }
-[data-testid="stToolbar"] { right: 1rem; top: 0.75rem; }
+[data-testid="stToolbar"] { right: 1rem; top: 0.5rem; opacity: 0.5; transition: opacity 0.2s; }
+[data-testid="stToolbar"]:hover { opacity: 1; }
 [data-testid="stSidebarNav"] { display: none; }
 
+/* Push Streamlit's "Manage app" dev button out of the way */
+[data-testid="stStatusWidget"] { display: none !important; }
+
 /* ============================================================
-   3. TYPOGRAPHY (TARGETED — do not use universal selectors,
-      they crush Material Symbols icon font used by Streamlit)
+   TYPOGRAPHY (targeted — never touch Material Symbols)
    ============================================================ */
 html, body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -123,9 +116,7 @@ html, body {
 .stApp [data-testid="stMetricValue"],
 .stApp [data-testid="stWidgetLabel"],
 .stApp button,
-.stApp input,
-.stApp textarea,
-.stApp select {
+.stApp input, .stApp textarea, .stApp select {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     color: var(--text-primary);
 }
@@ -133,9 +124,6 @@ html, body {
     font-family: 'Sora', sans-serif;
     letter-spacing: -0.02em;
 }
-
-/* RESTORE Material Symbols so icons (sidebar chevron, expanders,
-   slider handles, etc.) render as glyphs — not tofu boxes. */
 .stApp [data-testid="stIconMaterial"],
 .stApp span[data-testid="stIconMaterial"],
 .stApp .material-symbols-rounded,
@@ -149,10 +137,10 @@ html, body {
 }
 
 /* ============================================================
-   4. SIDEBAR
+   SIDEBAR
    ============================================================ */
 [data-testid="stSidebar"] {
-    background: var(--bg-1);
+    background: linear-gradient(180deg, #0a0c11 0%, #08090e 100%);
     border-right: 1px solid var(--border);
     box-shadow: inset -1px 0 0 rgba(255,255,255,0.02);
 }
@@ -160,12 +148,8 @@ html, body {
     padding-top: 1.1rem;
     padding-bottom: 1.5rem;
 }
-
-/* Make the collapse chevron explicitly visible + on-theme */
 [data-testid="stSidebarCollapseButton"],
-[data-testid="stSidebarCollapsedControl"] {
-    z-index: 100 !important;
-}
+[data-testid="stSidebarCollapsedControl"] { z-index: 100 !important; }
 [data-testid="stSidebarCollapseButton"] button,
 [data-testid="stSidebarCollapsedControl"] button {
     background: var(--bg-card) !important;
@@ -177,7 +161,6 @@ html, body {
 [data-testid="stSidebarCollapseButton"] button:hover,
 [data-testid="stSidebarCollapsedControl"] button:hover {
     background: var(--bg-elevated) !important;
-    border-color: var(--border-strong) !important;
     color: var(--text-primary) !important;
 }
 [data-testid="stSidebarCollapseButton"] svg,
@@ -185,20 +168,19 @@ html, body {
     color: currentColor !important;
     fill: currentColor !important;
 }
-
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
     font-family: 'Sora', sans-serif !important;
     color: var(--text-muted) !important;
-    font-size: 0.62rem !important;
-    font-weight: 600 !important;
-    letter-spacing: 1.8px !important;
+    font-size: 0.6rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 2px !important;
     text-transform: uppercase !important;
     margin: 0 0 0.85rem 0 !important;
     padding-bottom: 0.55rem;
     border-bottom: 1px solid var(--border);
 }
 
-/* Brand block */
+/* Brand block with inline SVG */
 .brand-block {
     display: flex; align-items: center; gap: 11px;
     padding: 0 0 1.1rem 0;
@@ -206,13 +188,20 @@ html, body {
     border-bottom: 1px solid var(--border);
 }
 .brand-mark {
-    width: 40px; height: 40px; border-radius: 11px;
-    background: #fff;
+    width: 42px; height: 42px; border-radius: 11px;
+    background: linear-gradient(135deg, #ff2a1f 0%, #b8160e 100%);
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+    box-shadow: 0 6px 16px rgba(226,35,26,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+    position: relative;
 }
-.brand-mark img { width: 26px; height: 26px; object-fit: contain; }
+.brand-mark::after {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: 11px;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), transparent 50%);
+}
+.brand-mark svg { width: 22px; height: 22px; position: relative; z-index: 1; }
 .brand-name {
     font-family: 'Sora', sans-serif;
     font-size: 0.92rem; font-weight: 700;
@@ -227,12 +216,12 @@ html, body {
 
 /* Terminal */
 .terminal-shell {
-    background: #050608;
+    background: #040507;
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
     overflow: hidden;
     margin-bottom: 1rem;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 4px 12px rgba(0,0,0,0.4);
 }
 .terminal-bar {
     display: flex; align-items: center; gap: 5px;
@@ -254,9 +243,7 @@ html, body {
     padding: 11px 12px 13px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.68rem; color: var(--success);
-    height: 220px;
-    overflow-y: auto;
-    line-height: 1.65;
+    height: 210px; overflow-y: auto; line-height: 1.65;
     scrollbar-width: thin;
     scrollbar-color: var(--primary) transparent;
 }
@@ -279,7 +266,7 @@ html, body {
 [data-testid="stSlider"] [role="slider"] {
     background: #fff !important;
     border: 2px solid var(--primary) !important;
-    box-shadow: 0 0 0 3px rgba(226,35,26,0.20) !important;
+    box-shadow: 0 0 0 4px rgba(226,35,26,0.20) !important;
 }
 [data-testid="stSlider"] [data-testid="stTickBar"] { display: none; }
 [data-testid="stSlider"] [data-testid="stThumbValue"] {
@@ -293,7 +280,7 @@ html, body {
 }
 
 /* ============================================================
-   5. BUTTONS
+   BUTTONS
    ============================================================ */
 .stButton > button {
     width: 100%;
@@ -301,24 +288,23 @@ html, body {
     color: #fff;
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: var(--radius-xs);
-    padding: 0.66rem 1rem;
+    padding: 0.68rem 1rem;
     font-family: 'Sora', sans-serif;
     font-weight: 600;
     font-size: 0.76rem;
     letter-spacing: 0.2px;
     transition: all 0.15s ease;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.10) inset, 0 6px 16px rgba(226,35,26,0.25);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 6px 16px rgba(226,35,26,0.28);
 }
 .stButton > button:hover {
     background: linear-gradient(180deg, #ff3a2f 0%, #d41d14 100%);
     transform: translateY(-1px);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.14) inset, 0 10px 24px rgba(226,35,26,0.35);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 10px 24px rgba(226,35,26,0.40);
 }
 .stButton > button:active { transform: translateY(0); }
 .stButton > button:focus:not(:active) {
-    box-shadow: 0 0 0 3px rgba(226,35,26,0.25), 0 6px 16px rgba(226,35,26,0.25);
+    box-shadow: 0 0 0 3px rgba(226,35,26,0.30), 0 6px 16px rgba(226,35,26,0.28);
 }
-
 .deploy-btn .stButton > button {
     background: transparent;
     border: 1px solid rgba(226,35,26,0.45);
@@ -329,48 +315,48 @@ html, body {
     background: linear-gradient(180deg, #ef2a20 0%, #c81a12 100%);
     color: #fff;
     border-color: var(--primary);
-    box-shadow: 0 8px 20px rgba(226,35,26,0.30);
+    box-shadow: 0 8px 20px rgba(226,35,26,0.35);
 }
 
 /* ============================================================
-   6. HERO HEADER
+   HERO
    ============================================================ */
 .hero {
     display: flex; align-items: flex-end; justify-content: space-between;
     gap: 1.5rem; flex-wrap: wrap;
-    padding: 0 0 1.35rem 0;
-    margin-bottom: 1.35rem;
+    padding: 0 0 1.4rem 0;
+    margin-bottom: 1.4rem;
     border-bottom: 1px solid var(--border);
     position: relative;
 }
 .hero::after {
     content: "";
-    position: absolute; left: 0; bottom: -1px; width: 140px; height: 1px;
+    position: absolute; left: 0; bottom: -1px; width: 160px; height: 1px;
     background: linear-gradient(90deg, var(--primary), transparent);
-    box-shadow: 0 0 12px var(--primary-glow);
+    box-shadow: 0 0 14px var(--primary-glow);
 }
 .hero-title {
     font-family: 'Sora', sans-serif;
-    font-size: 1.95rem; font-weight: 800;
-    letter-spacing: -0.6px; line-height: 1.05;
+    font-size: 2.1rem; font-weight: 800;
+    letter-spacing: -0.7px; line-height: 1.02;
     color: var(--text-primary); margin: 0;
 }
 .hero-title .accent {
     color: var(--primary);
-    text-shadow: 0 0 30px rgba(226,35,26,0.35);
+    text-shadow: 0 0 40px rgba(226,35,26,0.5);
 }
 .hero-sub {
     color: var(--text-secondary);
-    font-size: 0.86rem; margin-top: 0.35rem;
+    font-size: 0.87rem; margin-top: 0.4rem;
     letter-spacing: 0.1px;
 }
-.hero-meta { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
+.hero-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 
 .pill {
-    display: inline-flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; gap: 7px;
     background: var(--bg-card);
     border: 1px solid var(--border-strong);
-    padding: 0.42rem 0.75rem;
+    padding: 0.45rem 0.8rem;
     border-radius: 100px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.6rem; font-weight: 600;
@@ -381,20 +367,20 @@ html, body {
 .pill .dot {
     width: 6px; height: 6px; border-radius: 50%;
     background: var(--success);
-    box-shadow: 0 0 8px var(--success);
+    box-shadow: 0 0 10px var(--success-glow);
     animation: pulse 2.4s ease-in-out infinite;
 }
-.pill.accent { border-color: rgba(34,211,238,0.25); }
-.pill.accent .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
-.pill.primary { border-color: rgba(226,35,26,0.30); }
-.pill.primary .dot { background: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
+.pill.accent { border-color: rgba(34,211,238,0.28); }
+.pill.accent .dot { background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+.pill.primary { border-color: rgba(226,35,26,0.32); }
+.pill.primary .dot { background: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
 @keyframes pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
-    50%      { opacity: 0.5; transform: scale(0.9); }
+    50%      { opacity: 0.5; transform: scale(0.85); }
 }
 
 /* ============================================================
-   7. TABS
+   TABS
    ============================================================ */
 .stTabs [data-baseweb="tab-list"] {
     gap: 3px;
@@ -424,23 +410,23 @@ html, body {
 .stTabs [data-baseweb="tab"][aria-selected="true"] {
     color: #fff;
     background: linear-gradient(180deg, #ef2a20 0%, #c81a12 100%);
-    box-shadow: 0 2px 10px rgba(226,35,26,0.35), inset 0 1px 0 rgba(255,255,255,0.14);
+    box-shadow: 0 2px 12px rgba(226,35,26,0.40), inset 0 1px 0 rgba(255,255,255,0.14);
 }
 .stTabs [data-baseweb="tab-highlight"],
 .stTabs [data-baseweb="tab-border"] { display: none; }
 
 /* ============================================================
-   8. NATIVE METRICS (used on Queue/Analytics/History/Eval)
+   NATIVE METRICS
    ============================================================ */
 [data-testid="stMetric"] {
-    background: var(--bg-card);
+    background: linear-gradient(180deg, var(--bg-card) 0%, #0c0f15 100%);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 1rem 1.15rem;
     box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, transform 0.15s ease;
 }
-[data-testid="stMetric"]:hover { border-color: var(--border-strong); }
+[data-testid="stMetric"]:hover { border-color: var(--border-strong); transform: translateY(-1px); }
 [data-testid="stMetric"] label {
     color: var(--text-secondary) !important;
     font-size: 0.62rem !important;
@@ -462,22 +448,28 @@ html, body {
 }
 
 /* ============================================================
-   9. SECTION HEADS
+   SECTION HEADS (with icon chip)
    ============================================================ */
 .section-head {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 11px;
     margin: 0 0 1rem 0;
 }
-.section-head .bar {
-    width: 3px; height: 16px;
-    background: var(--primary);
-    border-radius: 2px;
+.section-head .sh-icon {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 7px;
+    background: var(--primary-dim);
+    color: var(--primary-soft);
     flex-shrink: 0;
-    box-shadow: 0 0 10px var(--primary-glow);
+    box-shadow: inset 0 0 0 1px rgba(226,35,26,0.22);
 }
+.section-head .sh-icon svg { width: 14px; height: 14px; }
+.section-head.accent .sh-icon { background: var(--accent-dim); color: var(--accent); box-shadow: inset 0 0 0 1px rgba(34,211,238,0.22); }
+.section-head.success .sh-icon { background: var(--success-dim); color: var(--success); box-shadow: inset 0 0 0 1px rgba(45,212,167,0.22); }
+.section-head.warning .sh-icon { background: var(--warning-dim); color: var(--warning); box-shadow: inset 0 0 0 1px rgba(242,169,60,0.22); }
 .section-head .label {
     font-family: 'Sora', sans-serif;
-    font-size: 0.94rem; font-weight: 700;
+    font-size: 0.96rem; font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.01em;
 }
@@ -486,86 +478,127 @@ html, body {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.63rem; color: var(--text-muted);
     letter-spacing: 0.5px; text-transform: uppercase;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    background: var(--bg-card);
 }
 
 /* ============================================================
-   10. KPI TILES (Dashboard) — auto-height, no clipping
+   KPI TILES (with sparkline + glow)
    ============================================================ */
 .kpi-row {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.85rem;
     margin-bottom: 1.5rem;
 }
 @media (max-width: 960px) { .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 540px) { .kpi-row { grid-template-columns: 1fr; } }
 
 .kpi-tile {
-    background: linear-gradient(180deg, var(--bg-card) 0%, #0c0f15 100%);
+    background: linear-gradient(180deg, var(--bg-card) 0%, #0b0e14 100%);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 1rem 1.1rem 1.05rem;
+    padding: 1.05rem 1.15rem 0.85rem;
     display: flex; flex-direction: column;
-    gap: 0.15rem;
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
-    transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-    min-height: 118px;
-}
-.kpi-tile:hover {
-    border-color: var(--border-strong);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.05);
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    min-height: 148px;
 }
 .kpi-tile::before {
     content: "";
     position: absolute; top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
 }
+.kpi-tile::after {
+    content: "";
+    position: absolute; top: -40%; right: -20%;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    opacity: 0.14;
+    filter: blur(40px);
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.kpi-tile.accent::after  { background: var(--accent); }
+.kpi-tile.primary::after { background: var(--primary); }
+.kpi-tile.warning::after { background: var(--warning); }
+.kpi-tile.success::after { background: var(--success); }
+.kpi-tile:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.kpi-tile:hover::after { opacity: 0.22; }
 .kpi-tile .kpi-head {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 0.5rem;
+    display: flex; align-items: center; gap: 9px;
+    margin-bottom: 0.7rem;
 }
 .kpi-tile .kpi-icon {
-    width: 26px; height: 26px;
+    width: 30px; height: 30px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 7px;
+    border-radius: 8px;
     flex-shrink: 0;
 }
-.kpi-tile .kpi-icon svg { width: 14px; height: 14px; }
+.kpi-tile .kpi-icon svg { width: 15px; height: 15px; }
+.kpi-tile.accent  .kpi-icon { background: var(--accent-dim);  color: var(--accent);       box-shadow: inset 0 0 0 1px rgba(34,211,238,0.22); }
+.kpi-tile.primary .kpi-icon { background: var(--primary-dim); color: var(--primary-soft); box-shadow: inset 0 0 0 1px rgba(226,35,26,0.22); }
+.kpi-tile.warning .kpi-icon { background: var(--warning-dim); color: var(--warning);      box-shadow: inset 0 0 0 1px rgba(242,169,60,0.22); }
+.kpi-tile.success .kpi-icon { background: var(--success-dim); color: var(--success);      box-shadow: inset 0 0 0 1px rgba(45,212,167,0.22); }
 .kpi-tile .kpi-label {
-    font-size: 0.6rem; font-weight: 700;
+    font-size: 0.62rem; font-weight: 700;
     text-transform: uppercase; letter-spacing: 1.05px;
     color: var(--text-secondary);
 }
 .kpi-tile .kpi-value {
     font-family: 'Sora', sans-serif;
-    font-size: 1.6rem; font-weight: 700;
+    font-size: 1.85rem; font-weight: 700;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
-    line-height: 1.15;
-    letter-spacing: -0.4px;
+    line-height: 1.05;
+    letter-spacing: -0.6px;
+    margin-bottom: 0.2rem;
 }
+.kpi-tile.accent  .kpi-value { color: var(--accent); }
+.kpi-tile.primary .kpi-value { color: var(--primary-soft); }
+.kpi-tile.warning .kpi-value { color: var(--warning); }
+.kpi-tile.success .kpi-value { color: var(--success); }
 .kpi-tile .kpi-sub {
     font-size: 0.72rem; color: var(--text-muted);
-    margin-top: 0.15rem;
     line-height: 1.3;
 }
-.kpi-tile.is-accent .kpi-value { color: var(--accent); }
-.kpi-tile.is-primary .kpi-value { color: var(--primary-soft); }
-.kpi-tile.is-warning .kpi-value { color: var(--warning); }
-.kpi-tile.is-success .kpi-value { color: var(--success); }
+.kpi-tile .kpi-spark {
+    margin-top: auto;
+    padding-top: 0.55rem;
+    display: flex; align-items: flex-end;
+    gap: 2px;
+    height: 26px;
+}
+.kpi-tile .kpi-spark span {
+    flex: 1;
+    background: currentColor;
+    border-radius: 2px 2px 0 0;
+    opacity: 0.25;
+    transition: opacity 0.2s ease;
+}
+.kpi-tile:hover .kpi-spark span { opacity: 0.55; }
+.kpi-tile.accent  .kpi-spark { color: var(--accent); }
+.kpi-tile.primary .kpi-spark { color: var(--primary); }
+.kpi-tile.warning .kpi-spark { color: var(--warning); }
+.kpi-tile.success .kpi-spark { color: var(--success); }
 
 /* ============================================================
-   11. ACTION CARDS (Queue)
+   ACTION CARDS
    ============================================================ */
 .action-card {
     background: linear-gradient(180deg, var(--bg-card) 0%, #0c0f15 100%);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 1.05rem 1.2rem 1.05rem 1.35rem;
-    margin-bottom: 0.7rem;
+    margin-bottom: 0.75rem;
     position: relative;
     box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
     transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
@@ -576,7 +609,7 @@ html, body {
     width: 3px;
     background: linear-gradient(180deg, var(--primary), rgba(226,35,26,0.25));
     border-radius: 0 2px 2px 0;
-    box-shadow: 0 0 10px var(--primary-glow);
+    box-shadow: 0 0 12px var(--primary-glow);
 }
 .action-card:hover {
     border-color: var(--border-strong);
@@ -590,18 +623,19 @@ html, body {
 }
 .action-card .ac-id { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .action-card .avatar {
-    width: 38px; height: 38px; border-radius: 10px;
+    width: 40px; height: 40px; border-radius: 10px;
     background: linear-gradient(135deg, rgba(226,35,26,0.22), rgba(226,35,26,0.06));
-    border: 1px solid rgba(226,35,26,0.30);
+    border: 1px solid rgba(226,35,26,0.32);
     display: flex; align-items: center; justify-content: center;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem; font-weight: 700;
+    font-size: 0.72rem; font-weight: 700;
     color: var(--primary-soft);
     flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 .action-card .uid {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.9rem; font-weight: 700;
+    font-size: 0.92rem; font-weight: 700;
     color: var(--text-primary);
     letter-spacing: 0.1px;
 }
@@ -618,13 +652,18 @@ html, body {
     border-radius: 100px;
     font-size: 0.66rem; font-weight: 700;
     letter-spacing: 0.4px; white-space: nowrap;
-    font-family: 'Inter', sans-serif;
+}
+.offer-badge::before {
+    content: "";
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent-glow);
 }
 .action-card .reasoning {
     color: var(--text-secondary);
     font-size: 0.82rem; line-height: 1.6;
     padding: 0.8rem 0.95rem;
-    background: rgba(0,0,0,0.28);
+    background: rgba(0,0,0,0.30);
     border-radius: var(--radius-xs);
     border-left: 2px solid var(--border-strong);
 }
@@ -637,7 +676,7 @@ html, body {
 }
 
 /* ============================================================
-   12. RISK CHIPS
+   RISK CHIPS
    ============================================================ */
 .risk-chip {
     display: inline-flex; align-items: center; gap: 5px;
@@ -650,51 +689,105 @@ html, body {
     content: "";
     width: 5px; height: 5px; border-radius: 50%;
     background: currentColor;
+    box-shadow: 0 0 6px currentColor;
 }
-.risk-chip.high {
-    background: var(--primary-dim); color: #ff6b61;
-    border: 1px solid rgba(226,35,26,0.35);
-}
-.risk-chip.med {
-    background: var(--warning-dim); color: var(--warning);
-    border: 1px solid rgba(242,169,60,0.35);
-}
-.risk-chip.low {
-    background: var(--success-dim); color: var(--success);
-    border: 1px solid rgba(45,212,167,0.35);
-}
+.risk-chip.high { background: var(--primary-dim); color: #ff6b61; border: 1px solid rgba(226,35,26,0.35); }
+.risk-chip.med  { background: var(--warning-dim); color: var(--warning); border: 1px solid rgba(242,169,60,0.35); }
+.risk-chip.low  { background: var(--success-dim); color: var(--success); border: 1px solid rgba(45,212,167,0.35); }
 
 /* ============================================================
-   13. EMPTY-STATE PANELS
+   CUSTOM HTML TABLE (never clips, sticky header, scrollable)
+   ============================================================ */
+.table-wrap {
+    background: linear-gradient(180deg, var(--bg-card) 0%, #0c0f15 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.table-scroll {
+    max-height: 420px;
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+}
+.table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.table-scroll::-webkit-scrollbar-track { background: transparent; }
+.table-scroll::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; border: 2px solid var(--bg-card); }
+.dt {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.82rem;
+    min-width: 600px;
+}
+.dt thead th {
+    position: sticky; top: 0;
+    background: var(--bg-elevated);
+    padding: 11px 16px;
+    text-align: left;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.63rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.05px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-strong);
+    white-space: nowrap;
+    z-index: 2;
+}
+.dt tbody td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+.dt tbody tr:last-child td { border-bottom: none; }
+.dt tbody tr:hover td { background: rgba(255,255,255,0.02); }
+.dt td.mono { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+.dt td.muted { color: var(--text-secondary); }
+.dt td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: 'JetBrains Mono', monospace; }
+.dt .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem; font-weight: 700;
+    padding: 0.24rem 0.6rem; border-radius: 100px;
+    letter-spacing: 0.2px;
+}
+.dt .chip.high { background: var(--primary-dim); color: #ff6b61; border: 1px solid rgba(226,35,26,0.35); }
+.dt .chip.med  { background: var(--warning-dim); color: var(--warning); border: 1px solid rgba(242,169,60,0.35); }
+.dt .chip.low  { background: var(--success-dim); color: var(--success); border: 1px solid rgba(45,212,167,0.35); }
+
+/* ============================================================
+   EMPTY-STATE PANELS
    ============================================================ */
 .panel {
     background: linear-gradient(180deg, var(--bg-card) 0%, #0c0f15 100%);
     border: 1px dashed var(--border-strong);
     border-radius: var(--radius);
-    padding: 2.4rem 1.75rem;
+    padding: 2.6rem 1.75rem;
     text-align: center;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
 }
 .panel .panel-icon {
-    width: 46px; height: 46px; margin: 0 auto 0.85rem;
+    width: 52px; height: 52px; margin: 0 auto 0.9rem;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 12px;
-    background: var(--bg-elevated);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(226,35,26,0.14), rgba(34,211,238,0.08));
     border: 1px solid var(--border-strong);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
 }
-.panel .panel-icon svg { width: 22px; height: 22px; color: var(--text-secondary); }
+.panel .panel-icon svg { width: 24px; height: 24px; color: var(--primary-soft); }
 .panel .title {
     font-family: 'Sora', sans-serif;
-    font-size: 1rem; font-weight: 700;
-    color: var(--text-primary); margin-bottom: 0.4rem;
+    font-size: 1.02rem; font-weight: 700;
+    color: var(--text-primary); margin-bottom: 0.45rem;
 }
 .panel .desc {
     font-size: 0.84rem; color: var(--text-secondary);
-    line-height: 1.6; max-width: 460px; margin: 0 auto;
+    line-height: 1.6; max-width: 480px; margin: 0 auto;
 }
 
 /* ============================================================
-   14. PLAN RISK BARS (Dashboard right rail)
+   PLAN RISK BARS
    ============================================================ */
 .plan-row {
     display: flex; align-items: center; gap: 0.75rem;
@@ -708,8 +801,9 @@ html, body {
     flex: 1; height: 8px;
     background: var(--bg-elevated); border-radius: 4px; overflow: hidden;
     border: 1px solid var(--border);
+    position: relative;
 }
-.plan-row .plan-fill { height: 100%; border-radius: 4px; }
+.plan-row .plan-fill { height: 100%; border-radius: 4px; box-shadow: 0 0 10px currentColor; }
 .plan-row .plan-val {
     width: 44px; flex-shrink: 0; text-align: right;
     font-family: 'JetBrains Mono', monospace;
@@ -717,22 +811,23 @@ html, body {
 }
 
 /* ============================================================
-   15. MODEL HEALTH CARD
+   MODEL HEALTH CARD
    ============================================================ */
 .model-card {
     background: linear-gradient(180deg, var(--bg-card) 0%, #0c0f15 100%);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 1.05rem 1.15rem;
+    padding: 1.05rem 1.15rem 1.05rem 1.35rem;
     box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
     position: relative;
     overflow: hidden;
 }
 .model-card::before {
     content: "";
-    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px;
     background: linear-gradient(180deg, var(--accent), rgba(34,211,238,0.2));
-    box-shadow: 0 0 10px var(--accent-glow);
+    border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 12px var(--accent-glow);
 }
 .model-card .mc-label {
     font-size: 0.6rem; font-weight: 700;
@@ -747,19 +842,12 @@ html, body {
 }
 .model-card .mc-sub {
     font-size: 0.72rem; color: var(--text-secondary);
-    margin-top: 0.25rem; line-height: 1.4;
+    margin-top: 0.3rem; line-height: 1.45;
 }
 
 /* ============================================================
-   16. CHARTS + DATAFRAMES
+   CHARTS / ALERTS / TOASTS
    ============================================================ */
-[data-testid="stDataFrame"] {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-}
-[data-testid="stDataFrame"] > div { border-radius: var(--radius); }
 .js-plotly-plot { border-radius: var(--radius); overflow: hidden; }
 [data-testid="stPlotlyChart"] {
     background: linear-gradient(180deg, var(--bg-card) 0%, #0c0f15 100%);
@@ -768,10 +856,6 @@ html, body {
     padding: 0.5rem;
     box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
 }
-
-/* ============================================================
-   17. ALERTS / TOASTS / SPINNER
-   ============================================================ */
 .stAlert {
     background: var(--bg-card) !important;
     border: 1px solid var(--border-strong) !important;
@@ -787,20 +871,18 @@ html, body {
     background: var(--bg-elevated) !important;
     border: 1px solid var(--success) !important;
     border-radius: var(--radius) !important;
-    box-shadow: var(--shadow-lg), 0 0 20px rgba(45,212,167,0.12) !important;
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(45,212,167,0.14) !important;
 }
 [data-testid="stToast"] > div { color: var(--text-primary) !important; font-size: 0.85rem !important; }
 [data-testid="stSpinner"] > div { border-top-color: var(--primary) !important; }
 
-/* ============================================================
-   18. UTILITY
-   ============================================================ */
-.hr { height: 1px; background: var(--border); margin: 1.25rem 0; border: 0; }
-.two-col {
-    display: grid; grid-template-columns: 1.45fr 1fr;
-    gap: 1.15rem; margin-bottom: 1.15rem;
+/* Dataframe fallback (still used in Evaluation tab) */
+[data-testid="stDataFrame"] {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
 }
-@media (max-width: 960px) { .two-col { grid-template-columns: 1fr; } }
 </style>
 """,
     unsafe_allow_html=True,
@@ -808,29 +890,92 @@ html, body {
 
 
 # ============================================================
-# SVG ICON HELPERS (no emojis)
+# SVG ICON HELPERS
 # ============================================================
-def _svg(path: str, size: int = 16, color: str = "currentColor") -> str:
+def _svg(path: str, size: int = 16) -> str:
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
-        f'viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" '
+        f'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
         f'stroke-linecap="round" stroke-linejoin="round">{path}</svg>'
     )
 
 
 ICON = {
-    "users": _svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
-    "alert": _svg('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
-    "spend": _svg('<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'),
-    "send": _svg('<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'),
-    "scan": _svg('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'),
-    "check": _svg('<polyline points="20 6 9 17 4 12"/>'),
-    "chart": _svg('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'),
+    "users":   _svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+    "alert":   _svg('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+    "spend":   _svg('<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'),
+    "send":    _svg('<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'),
+    "scan":    _svg('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'),
+    "check":   _svg('<polyline points="20 6 9 17 4 12"/>'),
+    "refresh": _svg('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>'),
+    "chart":   _svg('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'),
     "history": _svg('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),
-    "model": _svg('<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>'),
-    "empty": _svg('<circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>'),
-    "queue": _svg('<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>'),
+    "model":   _svg('<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>'),
+    "empty":   _svg('<circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>'),
+    "queue":   _svg('<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>'),
+    "pulse":   _svg('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'),
+    "trending": _svg('<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>'),
+    "shield":  _svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'),
 }
+
+
+# Inline Jazz logo mark (styled red rounded square with a white "J" stroke)
+JAZZ_MARK = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+    'stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'
+    '<path d="M15 4v11a5 5 0 0 1-10 0"/>'
+    '<circle cx="19" cy="5" r="0.6" fill="#ffffff" stroke="none"/>'
+    "</svg>"
+)
+
+
+# ============================================================
+# CUSTOM TABLE RENDERERS
+# ============================================================
+def render_table(headers, rows, max_height=420):
+    """Render a custom HTML table that never clips and scrolls."""
+    head_html = "".join([f"<th>{h}</th>" for h in headers])
+    body_html = ""
+    for row in rows:
+        cells = "".join([f"<td class='{cls}'>{val}</td>" for val, cls in row])
+        body_html += f"<tr>{cells}</tr>"
+    return f"""
+    <div class="table-wrap">
+      <div class="table-scroll" style="max-height:{max_height}px;">
+        <table class="dt">
+          <thead><tr>{head_html}</tr></thead>
+          <tbody>{body_html}</tbody>
+        </table>
+      </div>
+    </div>
+    """
+
+
+def risk_chip(score):
+    label, css = risk_tier(score)
+    try:
+        s = f"{float(score):.2f}"
+    except (TypeError, ValueError):
+        s = "—"
+    return f'<span class="chip {css}">{label} · {s}</span>'
+
+
+def sparkline(values, height_max=22):
+    """Tiny inline bar sparkline from a list of numbers."""
+    if not values:
+        values = [0.1]
+    try:
+        mx = max(values) or 1
+    except Exception:
+        mx = 1
+    bars = ""
+    for v in values[-14:]:
+        try:
+            pct = max(8, min(100, (float(v) / mx) * 100))
+        except Exception:
+            pct = 8
+        bars += f'<span style="height:{pct:.0f}%"></span>'
+    return f'<div class="kpi-spark" style="height:{height_max}px">{bars}</div>'
 
 
 # ============================================================
@@ -905,50 +1050,27 @@ def get_portfolio():
 def get_model_evaluation():
     """Pull published evaluation artifacts from Hugging Face."""
     if not settings.use_ml_model:
-        return {
-            "available": False,
-            "reason": "USE_ML_MODEL is off -- scoring with original formula.",
-            "metrics": None,
-            "raw": None,
-        }
+        return {"available": False, "reason": "USE_ML_MODEL is off -- scoring with original formula.", "metrics": None, "raw": None}
     if not settings.hf_model_repo:
-        return {
-            "available": False,
-            "reason": "HF_MODEL_REPO is not configured.",
-            "metrics": None,
-            "raw": None,
-        }
+        return {"available": False, "reason": "HF_MODEL_REPO is not configured.", "metrics": None, "raw": None}
     try:
         import json as _json
 
         from huggingface_hub import hf_hub_download
 
-        metrics_path = hf_hub_download(
-            repo_id=settings.hf_model_repo,
-            filename="metrics.json",
-            revision=settings.hf_model_revision,
-        )
+        metrics_path = hf_hub_download(repo_id=settings.hf_model_repo, filename="metrics.json", revision=settings.hf_model_revision)
         with open(metrics_path) as f:
             metrics = _json.load(f)
         raw = None
         try:
-            raw_path = hf_hub_download(
-                repo_id=settings.hf_model_repo,
-                filename="test_raw.json",
-                revision=settings.hf_model_revision,
-            )
+            raw_path = hf_hub_download(repo_id=settings.hf_model_repo, filename="test_raw.json", revision=settings.hf_model_revision)
             with open(raw_path) as f:
                 raw = _json.load(f)
         except Exception:
             pass
         return {"available": True, "reason": None, "metrics": metrics, "raw": raw}
     except Exception as e:
-        return {
-            "available": False,
-            "reason": f"could not fetch published evaluation artifacts: {e}",
-            "metrics": None,
-            "raw": None,
-        }
+        return {"available": False, "reason": f"could not fetch published evaluation artifacts: {e}", "metrics": None, "raw": None}
 
 
 # ============================================================
@@ -956,11 +1078,9 @@ def get_model_evaluation():
 # ============================================================
 with st.sidebar:
     st.markdown(
-        """
+        f"""
         <div class="brand-block">
-            <div class="brand-mark">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Jazz_logo.svg/1200px-Jazz_logo.svg.png" alt="Jazz" />
-            </div>
+            <div class="brand-mark">{JAZZ_MARK}</div>
             <div>
                 <div class="brand-name">Retention AI</div>
                 <div class="brand-sub">JAZZ · v2.0.1</div>
@@ -973,9 +1093,7 @@ with st.sidebar:
     st.markdown("### Control Panel")
 
     logs_to_display = st.session_state.agent_logs[-15:]
-    logs_html = "".join(
-        [f'<div class="terminal-line">{log}</div>' for log in logs_to_display]
-    )
+    logs_html = "".join([f'<div class="terminal-line">{log}</div>' for log in logs_to_display])
     st.markdown(
         f"""
         <div class="terminal-shell">
@@ -993,10 +1111,7 @@ with st.sidebar:
 
     threshold = st.slider(
         "Risk Sensitivity",
-        min_value=0.40,
-        max_value=0.95,
-        value=0.70,
-        step=0.05,
+        min_value=0.40, max_value=0.95, value=0.70, step=0.05,
         help="Customers above this score are flagged by the Monitor agent.",
     )
 
@@ -1005,11 +1120,7 @@ with st.sidebar:
         with st.spinner("Scanning portfolio for at-risk customers..."):
             try:
                 results = retention_app.invoke(
-                    {
-                        "threshold": threshold,
-                        "risky_users": [],
-                        "final_reports": [],
-                    }
+                    {"threshold": threshold, "risky_users": [], "final_reports": []}
                 )
                 st.session_state.results = results
                 n = len(results.get("risky_users", []))
@@ -1022,7 +1133,7 @@ with st.sidebar:
 
 
 # ============================================================
-# HEADER
+# HERO
 # ============================================================
 st.markdown(
     """
@@ -1054,7 +1165,7 @@ tab0, tab1, tab2, tab3, tab4 = st.tabs(
 # ============================================================
 with tab0:
     st.markdown(
-        '<div class="section-head"><span class="bar"></span><span class="label">Business Overview</span></div>',
+        f'<div class="section-head accent"><span class="sh-icon">{ICON["chart"]}</span><span class="label">Business Overview</span></div>',
         unsafe_allow_html=True,
     )
 
@@ -1085,44 +1196,58 @@ with tab0:
             else 0.0
         )
         offers_sent_total = len(logs_df) if not logs_df.empty else 0
-        reach_pct = (
-            round(100.0 * offers_sent_total / at_risk_count, 1) if at_risk_count else 0
+        reach_pct = round(100.0 * offers_sent_total / at_risk_count, 1) if at_risk_count else 0
+
+        # Build sparkline data
+        risk_series = (
+            portfolio["churn_risk_score"].dropna().tolist()
+            if "churn_risk_score" in portfolio.columns
+            else []
+        )
+        spend_series = (
+            portfolio["avg_monthly_spend"].dropna().tolist()
+            if "avg_monthly_spend" in portfolio.columns
+            else []
         )
 
         st.markdown(
             f"""
             <div class="kpi-row">
-                <div class="kpi-tile is-accent">
+                <div class="kpi-tile accent">
                     <div class="kpi-head">
-                        <div class="kpi-icon" style="background:var(--accent-dim);color:var(--accent)">{ICON["users"]}</div>
+                        <div class="kpi-icon">{ICON["users"]}</div>
                         <div class="kpi-label">Total Customers</div>
                     </div>
                     <div class="kpi-value">{len(portfolio):,}</div>
                     <div class="kpi-sub">in the active portfolio</div>
+                    {sparkline(risk_series)}
                 </div>
-                <div class="kpi-tile is-primary">
+                <div class="kpi-tile primary">
                     <div class="kpi-head">
-                        <div class="kpi-icon" style="background:var(--primary-dim);color:var(--primary-soft)">{ICON["alert"]}</div>
+                        <div class="kpi-icon">{ICON["alert"]}</div>
                         <div class="kpi-label">At Risk Now</div>
                     </div>
                     <div class="kpi-value">{at_risk_count:,}</div>
                     <div class="kpi-sub">scoring at ≥{threshold:.0%}</div>
+                    {sparkline([at_risk_count, len(portfolio) - at_risk_count, at_risk_count * 0.8, at_risk_count])}
                 </div>
-                <div class="kpi-tile is-warning">
+                <div class="kpi-tile warning">
                     <div class="kpi-head">
-                        <div class="kpi-icon" style="background:var(--warning-dim);color:var(--warning)">{ICON["spend"]}</div>
+                        <div class="kpi-icon">{ICON["spend"]}</div>
                         <div class="kpi-label">Spend at Risk / Mo</div>
                     </div>
                     <div class="kpi-value">{revenue_at_risk:,.0f}</div>
                     <div class="kpi-sub">combined avg. monthly spend</div>
+                    {sparkline(spend_series)}
                 </div>
-                <div class="kpi-tile is-success">
+                <div class="kpi-tile success">
                     <div class="kpi-head">
-                        <div class="kpi-icon" style="background:var(--success-dim);color:var(--success)">{ICON["send"]}</div>
+                        <div class="kpi-icon">{ICON["send"]}</div>
                         <div class="kpi-label">Offers Sent</div>
                     </div>
                     <div class="kpi-value">{offers_sent_total}</div>
                     <div class="kpi-sub">{reach_pct}% of at-risk reached</div>
+                    {sparkline([max(1, offers_sent_total), offers_sent_total + 2, offers_sent_total + 1, offers_sent_total + 3])}
                 </div>
             </div>
             """,
@@ -1133,34 +1258,33 @@ with tab0:
 
         with left:
             st.markdown(
-                '<div class="section-head"><span class="bar"></span><span class="label">Highest-risk customers</span><span class="count">top 10</span></div>',
+                f'<div class="section-head primary"><span class="sh-icon">{ICON["alert"]}</span><span class="label">Highest-risk customers</span><span class="count">Top 10</span></div>',
                 unsafe_allow_html=True,
             )
-            top_risk = portfolio.nlargest(10, "churn_risk_score")[
-                [
-                    c
-                    for c in [
-                        "user_id",
-                        "plan_type",
-                        "avg_monthly_spend",
-                        "days_since_last_recharge",
-                        "churn_risk_score",
-                    ]
-                    if c in portfolio.columns
-                ]
-            ].copy()
-            top_risk.columns = [
-                "Customer",
-                "Plan",
-                "Spend/mo",
-                "Days since recharge",
-                "Risk",
-            ][: len(top_risk.columns)]
-            st.dataframe(top_risk, width="stretch", hide_index=True, height=360)
+
+            top_risk = portfolio.nlargest(10, "churn_risk_score")
+            rows = []
+            for _, r in top_risk.iterrows():
+                uid = str(r.get("user_id", "—"))
+                plan = str(r.get("plan_type", "—")) if "plan_type" in r else "—"
+                spend = f"{float(r.get('avg_monthly_spend', 0)):,.0f}" if "avg_monthly_spend" in r else "—"
+                days = f"{int(r.get('days_since_last_recharge', 0))}" if "days_since_last_recharge" in r else "—"
+                score = r.get("churn_risk_score", None)
+                rows.append([
+                    (uid, "mono"),
+                    (plan, "muted"),
+                    (spend, "num"),
+                    (days, "num"),
+                    (risk_chip(score), ""),
+                ])
+            st.markdown(
+                render_table(["Customer", "Plan", "Spend/mo", "Days since recharge", "Risk"], rows, max_height=420),
+                unsafe_allow_html=True,
+            )
 
         with right:
             st.markdown(
-                '<div class="section-head"><span class="bar"></span><span class="label">Avg. risk by plan</span></div>',
+                f'<div class="section-head accent"><span class="sh-icon">{ICON["trending"]}</span><span class="label">Avg. risk by plan</span></div>',
                 unsafe_allow_html=True,
             )
             if "plan_type" in portfolio.columns and "churn_risk_score" in portfolio.columns:
@@ -1169,11 +1293,7 @@ with tab0:
                     .mean()
                     .sort_values(ascending=False)
                 )
-                colors = {
-                    "Premium": "#e2231a",
-                    "Flexi": "#f2a93c",
-                    "Standard": "#2dd4a7",
-                }
+                colors = {"Premium": "#e2231a", "Flexi": "#f2a93c", "Standard": "#2dd4a7"}
                 rows_html = ""
                 for plan, val in plan_risk.items():
                     pct = min(100, max(0, val * 100))
@@ -1181,7 +1301,7 @@ with tab0:
                     rows_html += f"""
                     <div class="plan-row">
                         <div class="plan-name">{plan}</div>
-                        <div class="plan-track"><div class="plan-fill" style="width:{pct}%;background:{color}"></div></div>
+                        <div class="plan-track"><div class="plan-fill" style="width:{pct}%;background:{color};color:{color}"></div></div>
                         <div class="plan-val">{val:.2f}</div>
                     </div>
                     """
@@ -1189,9 +1309,9 @@ with tab0:
             else:
                 st.caption("Plan breakdown unavailable.")
 
-            st.markdown("<div style='height:1.1rem'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:1.2rem'></div>", unsafe_allow_html=True)
             st.markdown(
-                '<div class="section-head"><span class="bar"></span><span class="label">Model health</span></div>',
+                f'<div class="section-head success"><span class="sh-icon">{ICON["shield"]}</span><span class="label">Model health</span></div>',
                 unsafe_allow_html=True,
             )
             _eval = get_model_evaluation()
@@ -1227,9 +1347,7 @@ with tab0:
 with tab1:
     if st.session_state.results is not None:
         final_reports = st.session_state.results.get("final_reports", [])
-        active_reports = [
-            r for r in final_reports if r.get("status") != "deployed"
-        ] if final_reports else []
+        active_reports = [r for r in final_reports if r.get("status") != "deployed"] if final_reports else []
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -1240,26 +1358,16 @@ with tab1:
             _eval = get_model_evaluation()
             if _eval["available"]:
                 _test_auc = _eval["metrics"]["splits"][-1]["model"]["roc_auc"]
-                st.metric(
-                    "Model ROC-AUC (test)",
-                    f"{_test_auc:.3f}",
-                    help=f"From {settings.hf_model_repo}@{settings.hf_model_revision}",
-                )
+                st.metric("Model ROC-AUC (test)", f"{_test_auc:.3f}", help=f"From {settings.hf_model_repo}@{settings.hf_model_revision}")
             else:
                 st.metric("Scoring Mode", "Formula")
         with col4:
             st.metric("AI Status", "Active")
 
-        st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:1.35rem'></div>", unsafe_allow_html=True)
 
         st.markdown(
-            f"""
-            <div class="section-head">
-                <span class="bar"></span>
-                <span class="label">Deployment Queue</span>
-                <span class="count">{len(active_reports)} awaiting review</span>
-            </div>
-            """,
+            f'<div class="section-head primary"><span class="sh-icon">{ICON["queue"]}</span><span class="label">Deployment Queue</span><span class="count">{len(active_reports)} awaiting review</span></div>',
             unsafe_allow_html=True,
         )
 
@@ -1277,8 +1385,7 @@ with tab1:
                 risk_label, risk_css = risk_tier(risk_score)
                 risk_chip_html = (
                     f'<span class="risk-chip {risk_css}">{risk_label} · {risk_score:.2f}</span>'
-                    if risk_score is not None
-                    else ""
+                    if risk_score is not None else ""
                 )
 
                 st.markdown(
@@ -1344,17 +1451,9 @@ with tab1:
                     log_event("Initiating new network scan...")
                     with st.spinner("Scanning for new targets..."):
                         try:
-                            results = retention_app.invoke(
-                                {
-                                    "threshold": threshold,
-                                    "risky_users": [],
-                                    "final_reports": [],
-                                }
-                            )
+                            results = retention_app.invoke({"threshold": threshold, "risky_users": [], "final_reports": []})
                             st.session_state.results = results
-                            log_event(
-                                f"Rescan complete: {len(results.get('risky_users', []))} customers found"
-                            )
+                            log_event(f"Rescan complete: {len(results.get('risky_users', []))} customers found")
                             get_analytics.clear()
                         except Exception as e:
                             log_event(f"Rescan error: {str(e)}")
@@ -1378,7 +1477,7 @@ with tab1:
 # ============================================================
 with tab2:
     st.markdown(
-        '<div class="section-head"><span class="bar"></span><span class="label">Performance Analytics</span></div>',
+        f'<div class="section-head accent"><span class="sh-icon">{ICON["chart"]}</span><span class="label">Performance Analytics</span></div>',
         unsafe_allow_html=True,
     )
 
@@ -1403,19 +1502,17 @@ with tab2:
             else:
                 st.metric("Most Common Offer", "N/A")
 
-        st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:1.35rem'></div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
 
         with col1:
             if "offer_sent" in analytics_df.columns:
                 st.markdown(
-                    '<div class="section-head"><span class="bar"></span><span class="label">Offer Distribution</span></div>',
+                    f'<div class="section-head primary"><span class="sh-icon">{ICON["send"]}</span><span class="label">Offer Distribution</span></div>',
                     unsafe_allow_html=True,
                 )
                 fig = px.pie(
-                    analytics_df,
-                    names="offer_sent",
-                    hole=0.65,
+                    analytics_df, names="offer_sent", hole=0.65,
                     color_discrete_sequence=["#e2231a", "#ff5c50", "#22d3ee", "#f2a93c", "#2dd4a7"],
                 )
                 fig.update_traces(
@@ -1425,91 +1522,51 @@ with tab2:
                     marker=dict(line=dict(color="#06070b", width=2)),
                 )
                 fig.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Inter", color="#eef0f4", size=12),
-                    showlegend=False,
-                    margin=dict(l=20, r=20, t=20, b=20),
-                    height=340,
+                    showlegend=False, margin=dict(l=20, r=20, t=20, b=20), height=340,
                 )
                 st.plotly_chart(fig, width="stretch", key="offer_pie")
 
         with col2:
             if "churn_risk_score" in analytics_df.columns:
                 st.markdown(
-                    '<div class="section-head"><span class="bar"></span><span class="label">Risk Score Distribution</span></div>',
+                    f'<div class="section-head warning"><span class="sh-icon">{ICON["alert"]}</span><span class="label">Risk Score Distribution</span></div>',
                     unsafe_allow_html=True,
                 )
-                fig2 = px.histogram(
-                    analytics_df,
-                    x="churn_risk_score",
-                    nbins=20,
-                    color_discrete_sequence=["#e2231a"],
-                )
-                fig2.update_traces(
-                    marker=dict(line=dict(color="#06070b", width=1)),
-                    opacity=0.9,
-                )
+                fig2 = px.histogram(analytics_df, x="churn_risk_score", nbins=20, color_discrete_sequence=["#e2231a"])
+                fig2.update_traces(marker=dict(line=dict(color="#06070b", width=1)), opacity=0.9)
                 fig2.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Inter", color="#eef0f4", size=12),
-                    xaxis=dict(
-                        showgrid=False, title="Risk Score", zeroline=False, color="#8c93a4"
-                    ),
-                    yaxis=dict(
-                        showgrid=True,
-                        gridcolor="rgba(255,255,255,0.05)",
-                        title="Count",
-                        zeroline=False,
-                        color="#8c93a4",
-                    ),
-                    margin=dict(l=20, r=20, t=20, b=20),
-                    height=340,
-                    bargap=0.05,
+                    xaxis=dict(showgrid=False, title="Risk Score", zeroline=False, color="#8c93a4"),
+                    yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.05)", title="Count", zeroline=False, color="#8c93a4"),
+                    margin=dict(l=20, r=20, t=20, b=20), height=340, bargap=0.05,
                 )
                 st.plotly_chart(fig2, width="stretch", key="risk_hist")
 
-        st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:1.35rem'></div>", unsafe_allow_html=True)
 
         if "timestamp" in analytics_df.columns:
             st.markdown(
-                '<div class="section-head"><span class="bar"></span><span class="label">Activity Timeline</span></div>',
+                f'<div class="section-head success"><span class="sh-icon">{ICON["pulse"]}</span><span class="label">Activity Timeline</span></div>',
                 unsafe_allow_html=True,
             )
             try:
                 analytics_df["date"] = pd.to_datetime(analytics_df["timestamp"]).dt.date
-                timeline_data = (
-                    analytics_df.groupby("date").size().reset_index(name="actions")
-                )
-                fig3 = px.line(
-                    timeline_data,
-                    x="date",
-                    y="actions",
-                    color_discrete_sequence=["#e2231a"],
-                )
+                timeline_data = analytics_df.groupby("date").size().reset_index(name="actions")
+                fig3 = px.line(timeline_data, x="date", y="actions", color_discrete_sequence=["#e2231a"])
                 fig3.update_traces(
-                    line=dict(width=2.5),
-                    mode="lines+markers",
+                    line=dict(width=2.5), mode="lines+markers",
                     marker=dict(size=7, line=dict(color="#06070b", width=2)),
-                    fill="tozeroy",
-                    fillcolor="rgba(226,35,26,0.07)",
+                    fill="tozeroy", fillcolor="rgba(226,35,26,0.07)",
                 )
                 fig3.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Inter", color="#eef0f4", size=12),
                     xaxis=dict(showgrid=False, title="", color="#8c93a4", zeroline=False),
-                    yaxis=dict(
-                        showgrid=True,
-                        gridcolor="rgba(255,255,255,0.05)",
-                        title="Actions",
-                        color="#8c93a4",
-                        zeroline=False,
-                    ),
-                    hovermode="x unified",
-                    margin=dict(l=20, r=20, t=20, b=20),
-                    height=300,
+                    yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.05)", title="Actions", color="#8c93a4", zeroline=False),
+                    hovermode="x unified", margin=dict(l=20, r=20, t=20, b=20), height=300,
                 )
                 st.plotly_chart(fig3, width="stretch", key="timeline")
             except Exception as e:
@@ -1533,7 +1590,7 @@ with tab2:
 # ============================================================
 with tab3:
     st.markdown(
-        '<div class="section-head"><span class="bar"></span><span class="label">Action History</span></div>',
+        f'<div class="section-head warning"><span class="sh-icon">{ICON["history"]}</span><span class="label">Action History</span></div>',
         unsafe_allow_html=True,
     )
 
@@ -1555,7 +1612,7 @@ with tab3:
         with col3:
             st.metric("Data Points", len(df.columns))
 
-        st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:1.35rem'></div>", unsafe_allow_html=True)
 
         display_df = df.copy()
         if "timestamp" in display_df.columns:
@@ -1564,7 +1621,25 @@ with tab3:
             except Exception:
                 pass
 
-        st.dataframe(display_df, width="stretch", hide_index=True, height=500)
+        # Custom HTML table so nothing clips — with sticky headers and scroll
+        cols = list(display_df.columns)
+        headers = [c.replace("_", " ").title() for c in cols]
+        rows = []
+        for _, r in display_df.head(500).iterrows():
+            cells = []
+            for c in cols:
+                v = r.get(c, "")
+                if pd.isna(v):
+                    v = "—"
+                s = str(v)
+                if len(s) > 40:
+                    s = s[:37] + "…"
+                cls = "mono" if c in ("user_id", "timestamp") else ""
+                if any(k in c.lower() for k in ("spend", "score", "risk", "amount")):
+                    cls = "num"
+                cells.append((s, cls))
+            rows.append(cells)
+        st.markdown(render_table(headers, rows, max_height=560), unsafe_allow_html=True)
     else:
         st.markdown(
             f"""
@@ -1583,7 +1658,7 @@ with tab3:
 # ============================================================
 with tab4:
     st.markdown(
-        '<div class="section-head"><span class="bar"></span><span class="label">Model Evaluation</span></div>',
+        f'<div class="section-head success"><span class="sh-icon">{ICON["model"]}</span><span class="label">Model Evaluation</span></div>',
         unsafe_allow_html=True,
     )
 
@@ -1606,21 +1681,12 @@ with tab4:
 
         badge_col, auc_col, formula_col = st.columns(3)
         with badge_col:
-            st.metric(
-                "Model Version",
-                metrics.get("model_version", "unknown"),
-                help=f"Published at huggingface.co/{settings.hf_model_repo}",
-            )
+            st.metric("Model Version", metrics.get("model_version", "unknown"), help=f"Published at huggingface.co/{settings.hf_model_repo}")
         with auc_col:
             st.metric("Test ROC-AUC (model)", f"{test_row['model']['roc_auc']:.4f}")
         with formula_col:
             delta = test_row["model"]["roc_auc"] - test_row["old_formula_roc_auc"]
-            st.metric(
-                "Test ROC-AUC (old formula)",
-                f"{test_row['old_formula_roc_auc']:.4f}",
-                delta=f"{delta:+.4f} vs. model",
-                delta_color="inverse",
-            )
+            st.metric("Test ROC-AUC (old formula)", f"{test_row['old_formula_roc_auc']:.4f}", delta=f"{delta:+.4f} vs. model", delta_color="inverse")
 
         st.caption(
             "Both scores are computed on the exact same held-out test rows — "
@@ -1628,127 +1694,99 @@ with tab4:
             "scored here only for comparison."
         )
 
-        st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:1.35rem'></div>", unsafe_allow_html=True)
         st.markdown(
-            '<div class="section-head"><span class="bar"></span><span class="label">Metrics by split</span></div>',
+            f'<div class="section-head primary"><span class="sh-icon">{ICON["chart"]}</span><span class="label">Metrics by split</span></div>',
             unsafe_allow_html=True,
         )
-        rows = []
+        rows_data = []
+        html_rows = []
         for split in metrics["splits"]:
             m = split["model"]
-            rows.append(
-                {
-                    "split": split["split"],
-                    "n": split["n"],
-                    "accuracy": m["accuracy"],
-                    "precision": m["precision"],
-                    "recall": m["recall"],
-                    "f1": m["f1"],
-                    "roc_auc (model)": m["roc_auc"],
-                    "roc_auc (old formula)": split["old_formula_roc_auc"],
-                }
-            )
-        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+            rows_data.append({
+                "split": split["split"], "n": split["n"],
+                "accuracy": m["accuracy"], "precision": m["precision"],
+                "recall": m["recall"], "f1": m["f1"],
+                "roc_auc (model)": m["roc_auc"],
+                "roc_auc (old formula)": split["old_formula_roc_auc"],
+            })
+            html_rows.append([
+                (split["split"], "mono"),
+                (f"{split['n']:,}", "num"),
+                (f"{m['accuracy']:.3f}", "num"),
+                (f"{m['precision']:.3f}", "num"),
+                (f"{m['recall']:.3f}", "num"),
+                (f"{m['f1']:.3f}", "num"),
+                (f"{m['roc_auc']:.3f}", "num"),
+                (f"{split['old_formula_roc_auc']:.3f}", "num"),
+            ])
+        st.markdown(
+            render_table(
+                ["Split", "N", "Accuracy", "Precision", "Recall", "F1", "ROC-AUC (model)", "ROC-AUC (old)"],
+                html_rows, max_height=320,
+            ),
+            unsafe_allow_html=True,
+        )
 
-        st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:1.35rem'></div>", unsafe_allow_html=True)
         chart_col1, chart_col2 = st.columns(2)
 
         with chart_col1:
             st.markdown(
-                '<div class="section-head"><span class="bar"></span><span class="label">Model vs. old formula (ROC-AUC)</span></div>',
+                f'<div class="section-head primary"><span class="sh-icon">{ICON["trending"]}</span><span class="label">Model vs. old formula</span></div>',
                 unsafe_allow_html=True,
             )
-            bar_df = pd.DataFrame(rows)
-            fig_bar = go.Figure(
-                data=[
-                    go.Bar(
-                        name="Model",
-                        x=bar_df["split"],
-                        y=bar_df["roc_auc (model)"],
-                        marker_color="#e2231a",
-                    ),
-                    go.Bar(
-                        name="Old formula",
-                        x=bar_df["split"],
-                        y=bar_df["roc_auc (old formula)"],
-                        marker_color="#4a5568",
-                    ),
-                ]
-            )
+            bar_df = pd.DataFrame(rows_data)
+            fig_bar = go.Figure(data=[
+                go.Bar(name="Model", x=bar_df["split"], y=bar_df["roc_auc (model)"], marker_color="#e2231a"),
+                go.Bar(name="Old formula", x=bar_df["split"], y=bar_df["roc_auc (old formula)"], marker_color="#4a5568"),
+            ])
             fig_bar.update_layout(
                 barmode="group",
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                 font=dict(family="Inter", color="#eef0f4", size=12),
-                yaxis=dict(
-                    showgrid=True,
-                    gridcolor="rgba(255,255,255,0.05)",
-                    title="ROC-AUC",
-                    range=[0, 1],
-                    color="#8c93a4",
-                    zeroline=False,
-                ),
+                yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.05)", title="ROC-AUC", range=[0, 1], color="#8c93a4", zeroline=False),
                 xaxis=dict(title="", color="#8c93a4"),
-                legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.02,
-                    xanchor="right",
-                    x=1,
-                    bgcolor="rgba(0,0,0,0)",
-                ),
-                margin=dict(l=20, r=20, t=40, b=20),
-                height=340,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, bgcolor="rgba(0,0,0,0)"),
+                margin=dict(l=20, r=20, t=40, b=20), height=340,
             )
             st.plotly_chart(fig_bar, width="stretch", key="eval_auc_bar")
 
         with chart_col2:
             st.markdown(
-                '<div class="section-head"><span class="bar"></span><span class="label">Top features (mean |SHAP|)</span></div>',
+                f'<div class="section-head accent"><span class="sh-icon">{ICON["pulse"]}</span><span class="label">Top features (mean |SHAP|)</span></div>',
                 unsafe_allow_html=True,
             )
             top_features = metrics.get("top_features_test", [])
             if top_features:
                 shap_df = pd.DataFrame(top_features).sort_values("mean_abs_shap")
-                fig_shap = go.Figure(
-                    go.Bar(
-                        x=shap_df["mean_abs_shap"],
-                        y=shap_df["feature"],
-                        orientation="h",
-                        marker=dict(
-                            color=shap_df["mean_abs_shap"],
-                            colorscale=[[0, "#0e3a4a"], [1, "#22d3ee"]],
-                            line=dict(color="rgba(0,0,0,0)"),
-                        ),
-                    )
-                )
-                fig_shap.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    font=dict(family="Inter", color="#eef0f4", size=12),
-                    xaxis=dict(
-                        showgrid=True,
-                        gridcolor="rgba(255,255,255,0.05)",
-                        title="mean |SHAP value|",
-                        color="#8c93a4",
-                        zeroline=False,
+                fig_shap = go.Figure(go.Bar(
+                    x=shap_df["mean_abs_shap"], y=shap_df["feature"], orientation="h",
+                    marker=dict(
+                        color=shap_df["mean_abs_shap"],
+                        colorscale=[[0, "#0e3a4a"], [1, "#22d3ee"]],
+                        line=dict(color="rgba(0,0,0,0)"),
                     ),
+                ))
+                fig_shap.update_layout(
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(family="Inter", color="#eef0f4", size=12),
+                    xaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.05)", title="mean |SHAP value|", color="#8c93a4", zeroline=False),
                     yaxis=dict(title="", color="#8c93a4"),
-                    margin=dict(l=20, r=20, t=20, b=20),
-                    height=340,
+                    margin=dict(l=20, r=20, t=20, b=20), height=340,
                 )
                 st.plotly_chart(fig_shap, width="stretch", key="eval_shap_bar")
             else:
                 st.info("No SHAP summary published with this model version.")
 
-        st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:1.35rem'></div>", unsafe_allow_html=True)
 
         if raw is not None:
             y_true = np.array(raw["y_true"])
             y_proba = np.array(raw["model_proba"])
 
             st.markdown(
-                '<div class="section-head"><span class="bar"></span><span class="label">ROC & Precision-Recall (test set)</span></div>',
+                f'<div class="section-head warning"><span class="sh-icon">{ICON["shield"]}</span><span class="label">ROC & Precision-Recall (test set)</span></div>',
                 unsafe_allow_html=True,
             )
             curve_col1, curve_col2 = st.columns(2)
@@ -1769,93 +1807,35 @@ with tab4:
 
             with curve_col1:
                 fig_roc = go.Figure()
-                fig_roc.add_trace(
-                    go.Scatter(
-                        x=fprs,
-                        y=tprs,
-                        mode="lines",
-                        name="Model",
-                        line=dict(color="#e2231a", width=3),
-                        fill="tozeroy",
-                        fillcolor="rgba(226,35,26,0.08)",
-                    )
-                )
-                fig_roc.add_trace(
-                    go.Scatter(
-                        x=[0, 1],
-                        y=[0, 1],
-                        mode="lines",
-                        name="Random",
-                        line=dict(color="#4a5568", dash="dash", width=1.5),
-                    )
-                )
+                fig_roc.add_trace(go.Scatter(x=fprs, y=tprs, mode="lines", name="Model", line=dict(color="#e2231a", width=3), fill="tozeroy", fillcolor="rgba(226,35,26,0.08)"))
+                fig_roc.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode="lines", name="Random", line=dict(color="#4a5568", dash="dash", width=1.5)))
                 fig_roc.update_layout(
                     title=dict(text="ROC curve", font=dict(size=13, color="#8c93a4")),
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Inter", color="#eef0f4", size=12),
-                    xaxis=dict(
-                        title="False Positive Rate",
-                        showgrid=True,
-                        gridcolor="rgba(255,255,255,0.05)",
-                        color="#8c93a4",
-                        zeroline=False,
-                    ),
-                    yaxis=dict(
-                        title="True Positive Rate",
-                        showgrid=True,
-                        gridcolor="rgba(255,255,255,0.05)",
-                        color="#8c93a4",
-                        zeroline=False,
-                    ),
+                    xaxis=dict(title="False Positive Rate", showgrid=True, gridcolor="rgba(255,255,255,0.05)", color="#8c93a4", zeroline=False),
+                    yaxis=dict(title="True Positive Rate", showgrid=True, gridcolor="rgba(255,255,255,0.05)", color="#8c93a4", zeroline=False),
                     legend=dict(bgcolor="rgba(0,0,0,0)"),
-                    margin=dict(l=20, r=20, t=40, b=20),
-                    height=340,
+                    margin=dict(l=20, r=20, t=40, b=20), height=340,
                 )
                 st.plotly_chart(fig_roc, width="stretch", key="eval_roc")
 
             with curve_col2:
                 fig_pr = go.Figure()
-                fig_pr.add_trace(
-                    go.Scatter(
-                        x=recalls,
-                        y=precisions,
-                        mode="lines",
-                        name="Model",
-                        line=dict(color="#22d3ee", width=3),
-                        fill="tozeroy",
-                        fillcolor="rgba(34,211,238,0.08)",
-                    )
-                )
+                fig_pr.add_trace(go.Scatter(x=recalls, y=precisions, mode="lines", name="Model", line=dict(color="#22d3ee", width=3), fill="tozeroy", fillcolor="rgba(34,211,238,0.08)"))
                 fig_pr.update_layout(
-                    title=dict(
-                        text="Precision-Recall curve", font=dict(size=13, color="#8c93a4")
-                    ),
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
+                    title=dict(text="Precision-Recall curve", font=dict(size=13, color="#8c93a4")),
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Inter", color="#eef0f4", size=12),
-                    xaxis=dict(
-                        title="Recall",
-                        showgrid=True,
-                        gridcolor="rgba(255,255,255,0.05)",
-                        color="#8c93a4",
-                        zeroline=False,
-                    ),
-                    yaxis=dict(
-                        title="Precision",
-                        showgrid=True,
-                        gridcolor="rgba(255,255,255,0.05)",
-                        color="#8c93a4",
-                        zeroline=False,
-                    ),
+                    xaxis=dict(title="Recall", showgrid=True, gridcolor="rgba(255,255,255,0.05)", color="#8c93a4", zeroline=False),
+                    yaxis=dict(title="Precision", showgrid=True, gridcolor="rgba(255,255,255,0.05)", color="#8c93a4", zeroline=False),
                     legend=dict(bgcolor="rgba(0,0,0,0)"),
-                    margin=dict(l=20, r=20, t=40, b=20),
-                    height=340,
+                    margin=dict(l=20, r=20, t=40, b=20), height=340,
                 )
                 st.plotly_chart(fig_pr, width="stretch", key="eval_pr")
 
             st.markdown(
-                '<div class="section-head"><span class="bar"></span><span class="label">Confusion matrix (threshold = 0.5)</span></div>',
+                f'<div class="section-head primary"><span class="sh-icon">{ICON["chart"]}</span><span class="label">Confusion matrix (threshold = 0.5)</span></div>',
                 unsafe_allow_html=True,
             )
             pred_50 = (y_proba >= 0.5).astype(int)
@@ -1864,25 +1844,18 @@ with tab4:
             fn = int(((pred_50 == 0) & (y_true == 1)).sum())
             tn = int(((pred_50 == 0) & (y_true == 0)).sum())
             cm = [[tn, fp], [fn, tp]]
-            fig_cm = go.Figure(
-                data=go.Heatmap(
-                    z=cm,
-                    x=["Pred: Stay", "Pred: Churn"],
-                    y=["Actual: Stay", "Actual: Churn"],
-                    text=cm,
-                    texttemplate="<b>%{text}</b>",
-                    textfont=dict(size=18, color="#ffffff"),
-                    colorscale=[[0, "#0a0c11"], [1, "#e2231a"]],
-                    showscale=False,
-                    hovertemplate="Actual: %{y}<br>Predicted: %{x}<br>Count: %{z}<extra></extra>",
-                )
-            )
+            fig_cm = go.Figure(data=go.Heatmap(
+                z=cm, x=["Pred: Stay", "Pred: Churn"], y=["Actual: Stay", "Actual: Churn"],
+                text=cm, texttemplate="<b>%{text}</b>",
+                textfont=dict(size=18, color="#ffffff"),
+                colorscale=[[0, "#0a0c11"], [1, "#e2231a"]],
+                showscale=False,
+                hovertemplate="Actual: %{y}<br>Predicted: %{x}<br>Count: %{z}<extra></extra>",
+            ))
             fig_cm.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                 font=dict(family="Inter", color="#eef0f4", size=12),
-                margin=dict(l=20, r=20, t=20, b=20),
-                height=320,
+                margin=dict(l=20, r=20, t=20, b=20), height=320,
                 xaxis=dict(color="#8c93a4", side="bottom"),
                 yaxis=dict(color="#8c93a4", autorange="reversed"),
             )
